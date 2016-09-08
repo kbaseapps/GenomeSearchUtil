@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #BEGIN_HEADER
+from GenomeSearchUtil.GenomeSearchUtilIndexer import GenomeSearchUtilIndexer
 #END_HEADER
 
 
@@ -29,6 +30,7 @@ class GenomeSearchUtil:
     # be found
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
+        self.indexer = GenomeSearchUtilIndexer(config)
         #END_CONSTRUCTOR
         pass
     
@@ -55,7 +57,9 @@ class GenomeSearchUtil:
         # ctx is the context object
         # return variables are: result
         #BEGIN search
-        result = {}
+        result = self.indexer.search(ctx["token"], params.get("ref", None), 
+                                     params.get("query", None), params.get("sort_by", None),
+                                     params.get("start", None), params.get("limit", None))
         #END search
 
         # At some point might do deeper type checking...

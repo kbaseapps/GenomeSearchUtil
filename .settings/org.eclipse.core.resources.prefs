@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+encoding//lib/GenomeSearchUtil/GenomeSearchUtilClient.py=utf-8
+encoding//lib/GenomeSearchUtil/GenomeSearchUtilImpl.py=utf-8
+encoding//lib/GenomeSearchUtil/GenomeSearchUtilIndexer.py=utf-8
+encoding//lib/GenomeSearchUtil/GenomeSearchUtilServer.py=utf-8
+encoding//test/GenomeSearchUtil_server_test.py=utf-8
