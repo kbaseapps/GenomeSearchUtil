@@ -45,6 +45,7 @@ class GenomeSearchUtilTest(unittest.TestCase):
         for nameval in config.items('GenomeSearchUtil'):
             cls.cfg[nameval[0]] = nameval[1]
         cls.cfg['genome-index-dir'] = cls.cfg['scratch']
+        cls.cfg['debug'] = "1"
         cls.wsURL = cls.cfg['workspace-url']
         cls.wsClient = workspaceService(cls.wsURL, token=token)
         cls.serviceImpl = GenomeSearchUtil(cls.cfg)
@@ -76,7 +77,7 @@ class GenomeSearchUtilTest(unittest.TestCase):
     # NOTE: According to Python unittest naming rules test method names should start from 'test'.
     def test_search(self):
         public_ws = "KBasePublicGenomesV5"
-        genome_ids = ["kb|g.3899", "kb|g.166832", "kb|g.166828", "kb|g.166814", "kb|g.166802", "kb|g.140106"]
+        genome_ids = ["kb|g.0", "kb|g.3899", "kb|g.166832", "kb|g.166828", "kb|g.166814", "kb|g.166802", "kb|g.140106"]
         for genome_id in genome_ids:
             self.check_genome(public_ws + "/" + genome_id)
 

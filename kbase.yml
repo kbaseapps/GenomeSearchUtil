@@ -2,7 +2,7 @@ module-name:
     GenomeSearchUtil
 
 module-description:
-    A KBase module
+    A KBase module for indexing of large Genome objects
 
 service-language:
     python
@@ -11,5 +11,7 @@ module-version:
     0.0.1
 
 owners:
-    [rsutormin]
+    [rsutormin, msneddon]
 
+service-config:
+    dynamic-service: true

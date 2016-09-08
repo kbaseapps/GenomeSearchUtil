@@ -33,6 +33,7 @@ module GenomeSearchUtil {
         string function;
         list<Location> location;
         string feature_type;
+        Location global_location;
     } FeatureData;
 
     /*
