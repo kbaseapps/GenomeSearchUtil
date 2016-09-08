@@ -5,6 +5,7 @@ import time
 import subprocess
 import gzip
 import io
+import traceback
 from biokbase.workspace.client import Workspace as workspaceService
 
 class GenomeSearchUtilIndexer:
@@ -23,11 +24,13 @@ class GenomeSearchUtilIndexer:
         self.genome_index_dir = config["genome-index-dir"]
         if not os.path.isdir(self.genome_index_dir):
             os.makedirs(self.genome_index_dir)
-        self.debug = "debug" in config and config["debug"] == "1"
+        self.debug = True  #"debug" in config and config["debug"] == "1"
     
     def search(self, token, ref, query, sort_by, start, limit):
-        inner_ref = self.check_cache(ref, token)
-        index_file = self.get_sorted_file_path(inner_ref, sort_by)
+        if self.debug:
+            print("Searching features for genome: " + ref)
+        inner_chsum = self.check_cache(ref, token)
+        index_file = self.get_sorted_file_path(inner_chsum, sort_by)
         return self.filter_query(index_file, query, start, limit)
 
     def to_text(self, mapping, key):
@@ -38,8 +41,8 @@ class GenomeSearchUtilIndexer:
             return ",".join(str(x) for x in value if x)
         return str(value)
 
-    def save_tsv(self, features, inner_ref):
-        target_file_path = os.path.join(self.genome_index_dir, inner_ref + ".tsv")
+    def save_tsv(self, features, inner_chsum):
+        target_file_path = os.path.join(self.genome_index_dir, inner_chsum + ".tsv")
         with open(target_file_path, 'w') as outfile:
             pos = 0
             for feature in features:
@@ -87,8 +90,8 @@ class GenomeSearchUtilIndexer:
     def check_cache(self, ref, token):
         ws_client = workspaceService(self.ws_url, token=token)
         info = ws_client.get_object_info_new({"objects": [{"ref": ref}]})[0]
-        inner_ref = str(info[6]) + "_" + str(info[0]) + "_" + str(info[4])
-        index_file = os.path.join(self.genome_index_dir, inner_ref + ".tsv.gz")
+        inner_chsum = info[8]  #str(info[6]) + "_" + str(info[0]) + "_" + str(info[4])
+        index_file = os.path.join(self.genome_index_dir, inner_chsum + ".tsv.gz")
         if not os.path.isfile(index_file):
             if self.debug:
                 print("    Loading WS object...")
@@ -97,16 +100,16 @@ class GenomeSearchUtilIndexer:
                     "/features/[*]/id", "/features/[*]/type", 
                     "/features/[*]/function", "/features/[*]/aliases", 
                     "/features/[*]/location"]}])[0]["data"]
-            self.save_tsv(genome["features"], inner_ref)
+            self.save_tsv(genome["features"], inner_chsum)
             if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
-        return inner_ref
+        return inner_chsum
 
-    def get_sorted_file_path(self, inner_ref, sort_by):
-        input_file = os.path.join(self.genome_index_dir, inner_ref + ".tsv.gz")
+    def get_sorted_file_path(self, inner_chsum, sort_by):
+        input_file = os.path.join(self.genome_index_dir, inner_chsum + ".tsv.gz")
         if not os.path.isfile(input_file):
             raise ValueError("File not found: " + input_file)
-        if len(sort_by) == 0:
+        if sort_by is None or len(sort_by) == 0:
             return input_file
         sorting_suffix = ""
         cmd = "gunzip -c \"" + input_file + "\" | sort -t\\\t"
@@ -120,7 +123,7 @@ class GenomeSearchUtilIndexer:
             if not ascending_order:
                 sort_arg += "r"
             cmd += " " + sort_arg
-        output_file = os.path.join(self.genome_index_dir, inner_ref + "_" + 
+        output_file = os.path.join(self.genome_index_dir, inner_chsum + "_" + 
                                    sorting_suffix + ".tsv.gz")
         if not os.path.isfile(output_file):
             if self.debug:
@@ -137,6 +140,8 @@ class GenomeSearchUtilIndexer:
         if self.debug:
                 print("    Filtering...")
         t1 = time.time()
+        if query is None:
+            query = ""
         if start is None:
             start = 0
         if limit is None:
@@ -148,25 +153,32 @@ class GenomeSearchUtilIndexer:
                 line2 = line[line.index('\t') + 1:]
                 if query in line2.lower():
                     if fcount >= start and fcount < start + limit:
-                        items = line.rstrip().split('\t')
-                        contig_id = items[3]
-                        strand = items[5]
-                        gloc = {"contig_id": contig_id, "start": int(items[4]),
-                                      "strand": strand, "length": int(items[6])}
-                        obj = json.loads(items[0])
-                        location = []
-                        if "l" in obj:
-                            for loc in obj["l"]:
-                                if len(loc) == 4:
-                                    location.append(loc)
-                                else:
-                                    location.append([contig_id, loc[0], strand, loc[1]])
-                        else:
-                            location.append(gloc)
-                        features.append({"location": location, "feature_id": items[1],
-                                "feature_type": items[2], "global_location": gloc,
-                                "aliases": items[7].split(','), "function": items[8]})
+                        features.append(self.unpack_feature(line.rstrip('\n')))
                     fcount += 1
         if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
         return {"num_found": fcount, "start": start, "features": features}
+
+    def unpack_feature(self, line):
+        try:
+            items = line.split('\t')
+            contig_id = items[3]
+            strand = items[5]
+            gloc = {"contig_id": contig_id, "start": int(items[4]),
+                          "strand": strand, "length": int(items[6])}
+            obj = json.loads(items[0])
+            location = []
+            if "l" in obj:
+                for loc in obj["l"]:
+                    if len(loc) == 4:
+                        location.append(loc)
+                    else:
+                        location.append([contig_id, loc[0], strand, loc[1]])
+            else:
+                location.append(gloc)
+            return {"location": location, "feature_id": items[1],
+                    "feature_type": items[2], "global_location": gloc,
+                    "aliases": items[7].split(','), "function": items[8]}
+        except:
+            raise ValueError("Error parsing feature from: [" + line + "]\n" +
+                             "Cause: " + traceback.format_exc())
