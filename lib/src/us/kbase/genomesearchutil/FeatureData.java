@@ -24,7 +24,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "aliases",
     "function",
     "location",
-    "feature_type"
+    "feature_type",
+    "global_location"
 })
 public class FeatureData {
 
@@ -35,9 +36,16 @@ public class FeatureData {
     @JsonProperty("function")
     private java.lang.String function;
     @JsonProperty("location")
-    private List<Location> location;
+    private List<us.kbase.genomesearchutil.Location> location;
     @JsonProperty("feature_type")
     private java.lang.String featureType;
+    /**
+     * <p>Original spec-file type: Location</p>
+     * 
+     * 
+     */
+    @JsonProperty("global_location")
+    private us.kbase.genomesearchutil.Location globalLocation;
     private Map<java.lang.String, Object> additionalProperties = new HashMap<java.lang.String, Object>();
 
     @JsonProperty("feature_id")
@@ -86,16 +94,16 @@ public class FeatureData {
     }
 
     @JsonProperty("location")
-    public List<Location> getLocation() {
+    public List<us.kbase.genomesearchutil.Location> getLocation() {
         return location;
     }
 
     @JsonProperty("location")
-    public void setLocation(List<Location> location) {
+    public void setLocation(List<us.kbase.genomesearchutil.Location> location) {
         this.location = location;
     }
 
-    public FeatureData withLocation(List<Location> location) {
+    public FeatureData withLocation(List<us.kbase.genomesearchutil.Location> location) {
         this.location = location;
         return this;
     }
@@ -115,6 +123,31 @@ public class FeatureData {
         return this;
     }
 
+    /**
+     * <p>Original spec-file type: Location</p>
+     * 
+     * 
+     */
+    @JsonProperty("global_location")
+    public us.kbase.genomesearchutil.Location getGlobalLocation() {
+        return globalLocation;
+    }
+
+    /**
+     * <p>Original spec-file type: Location</p>
+     * 
+     * 
+     */
+    @JsonProperty("global_location")
+    public void setGlobalLocation(us.kbase.genomesearchutil.Location globalLocation) {
+        this.globalLocation = globalLocation;
+    }
+
+    public FeatureData withGlobalLocation(us.kbase.genomesearchutil.Location globalLocation) {
+        this.globalLocation = globalLocation;
+        return this;
+    }
+
     @JsonAnyGetter
     public Map<java.lang.String, Object> getAdditionalProperties() {
         return this.additionalProperties;
@@ -127,7 +160,7 @@ public class FeatureData {
 
     @Override
     public java.lang.String toString() {
-        return ((((((((((((("FeatureData"+" [featureId=")+ featureId)+", aliases=")+ aliases)+", function=")+ function)+", location=")+ location)+", featureType=")+ featureType)+", additionalProperties=")+ additionalProperties)+"]");
+        return ((((((((((((((("FeatureData"+" [featureId=")+ featureId)+", aliases=")+ aliases)+", function=")+ function)+", location=")+ location)+", featureType=")+ featureType)+", globalLocation=")+ globalLocation)+", additionalProperties=")+ additionalProperties)+"]");
     }
 
 }

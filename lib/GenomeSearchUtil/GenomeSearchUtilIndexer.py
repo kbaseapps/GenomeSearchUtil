@@ -6,6 +6,7 @@ import subprocess
 import gzip
 import io
 import traceback
+import string
 from biokbase.workspace.client import Workspace as workspaceService
 
 class GenomeSearchUtilIndexer:
@@ -26,12 +27,24 @@ class GenomeSearchUtilIndexer:
             os.makedirs(self.genome_index_dir)
         self.debug = True  #"debug" in config and config["debug"] == "1"
     
-    def search(self, token, ref, query, sort_by, start, limit):
+    def search(self, token, ref, query, sort_by, start, limit, num_found):
+        if query is None:
+            query = ""
+        if start is None:
+            start = 0
+        if limit is None:
+            limit = 50
         if self.debug:
-            print("Searching features for genome: " + ref)
+            print("Search: genome=" + ref + ", query=[" +
+                  query + "], sort-by=[" + self.get_sorting_code(sort_by) +
+                  "], start=" + str(start) + ", limit=" + str(limit))
+        t1 = time.time()
         inner_chsum = self.check_cache(ref, token)
         index_file = self.get_sorted_file_path(inner_chsum, sort_by)
-        return self.filter_query(index_file, query, start, limit)
+        ret = self.filter_query(index_file, query, start, limit, num_found)
+        if self.debug:
+            print("    (overall-time=" + str(time.time() - t1) + ")")
+        return ret
 
     def to_text(self, mapping, key):
         if key not in mapping or mapping[key] is None:
@@ -90,7 +103,7 @@ class GenomeSearchUtilIndexer:
     def check_cache(self, ref, token):
         ws_client = workspaceService(self.ws_url, token=token)
         info = ws_client.get_object_info_new({"objects": [{"ref": ref}]})[0]
-        inner_chsum = info[8]  #str(info[6]) + "_" + str(info[0]) + "_" + str(info[4])
+        inner_chsum = info[8]
         index_file = os.path.join(self.genome_index_dir, inner_chsum + ".tsv.gz")
         if not os.path.isfile(index_file):
             if self.debug:
@@ -105,26 +118,42 @@ class GenomeSearchUtilIndexer:
                 print("    (time=" + str(time.time() - t1) + ")")
         return inner_chsum
 
+    def get_column_props(self, col_name):
+        if col_name not in self.column_props_map:
+            raise ValueError("Unknown column name '" + col_name + "', " +
+                    "please use one of " + str(self.column_props_map.keys()))
+        return self.column_props_map[col_name]
+
+    def get_sorting_code(self, sort_by):
+        ret = ""
+        if sort_by is None or len(sort_by) == 0:
+            return ret
+        for column_sorting in sort_by:
+            col_name = column_sorting[0]
+            col_props = self.get_column_props(col_name)
+            col_pos = str(col_props["col"])
+            ascending_order = column_sorting[1]
+            ret += col_pos + ('a' if ascending_order else 'd')
+        return ret
+
     def get_sorted_file_path(self, inner_chsum, sort_by):
         input_file = os.path.join(self.genome_index_dir, inner_chsum + ".tsv.gz")
         if not os.path.isfile(input_file):
             raise ValueError("File not found: " + input_file)
         if sort_by is None or len(sort_by) == 0:
             return input_file
-        sorting_suffix = ""
-        cmd = "gunzip -c \"" + input_file + "\" | sort -t\\\t"
+        cmd = "gunzip -c \"" + input_file + "\" | sort -f -t\\\t"
         for column_sorting in sort_by:
             col_name = column_sorting[0]
-            col_props = self.column_props_map[col_name]
+            col_props = self.get_column_props(col_name)
             col_pos = str(col_props["col"])
             ascending_order = column_sorting[1]
-            sorting_suffix += col_pos + ('a' if ascending_order else 'd')
             sort_arg = "-k" + col_pos + "," + col_pos + col_props["type"]
             if not ascending_order:
                 sort_arg += "r"
             cmd += " " + sort_arg
         output_file = os.path.join(self.genome_index_dir, inner_chsum + "_" + 
-                                   sorting_suffix + ".tsv.gz")
+                                   self.get_sorting_code(sort_by) + ".tsv.gz")
         if not os.path.isfile(output_file):
             if self.debug:
                 print("    Sorting...")
@@ -136,28 +165,29 @@ class GenomeSearchUtilIndexer:
                 print("    (time=" + str(time.time() - t1) + ")")
         return output_file
 
-    def filter_query(self, index_file, query, start, limit):
+    def filter_query(self, index_file, query, start, limit, num_found):
+        query_words = query.lower().translate(
+                string.maketrans("\r\n\t,", "    ")).split()
         if self.debug:
                 print("    Filtering...")
         t1 = time.time()
-        if query is None:
-            query = ""
-        if start is None:
-            start = 0
-        if limit is None:
-            limit = 50
         fcount = 0
         features = []
         with io.TextIOWrapper(io.BufferedReader(gzip.open(index_file))) as infile:
             for line in infile:
                 line2 = line[line.index('\t') + 1:]
-                if query in line2.lower():
+                if all(word in line2.lower() for word in query_words):
                     if fcount >= start and fcount < start + limit:
                         features.append(self.unpack_feature(line.rstrip('\n')))
                     fcount += 1
+                    if num_found is not None and fcount >= start + limit:
+                        # Having shortcut when real num_found was already known
+                        fcount = num_found
+                        break
         if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
-        return {"num_found": fcount, "start": start, "features": features}
+        return {"num_found": fcount, "start": start, "features": features,
+                "query": query}
 
     def unpack_feature(self, line):
         try:
@@ -176,9 +206,12 @@ class GenomeSearchUtilIndexer:
                         location.append([contig_id, loc[0], strand, loc[1]])
             else:
                 location.append(gloc)
+            aliases = {}
+            for alias in items[7].split(','):
+                aliases[alias] = "-"
             return {"location": location, "feature_id": items[1],
                     "feature_type": items[2], "global_location": gloc,
-                    "aliases": items[7].split(','), "function": items[8]}
+                    "aliases": aliases, "function": items[8]}
         except:
             raise ValueError("Error parsing feature from: [" + line + "]\n" +
                              "Cause: " + traceback.format_exc())

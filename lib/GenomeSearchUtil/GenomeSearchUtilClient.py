@@ -43,14 +43,18 @@ class GenomeSearchUtil(object):
            @range [0,1]), parameter "start" of Long, parameter "limit" of Long
         :returns: instance of type "SearchResult" (num_found - number of all
            items found in query search (with only part of it returned in
-           "features" list).) -> structure: parameter "start" of Long,
-           parameter "features" of list of type "FeatureData" -> structure:
-           parameter "feature_id" of String, parameter "aliases" of mapping
-           from String to list of String, parameter "function" of String,
-           parameter "location" of list of type "Location" -> structure:
-           parameter "contig_id" of String, parameter "start" of Long,
-           parameter "strand" of String, parameter "length" of Long,
-           parameter "feature_type" of String, parameter "num_found" of Long
+           "features" list).) -> structure: parameter "query" of String,
+           parameter "start" of Long, parameter "features" of list of type
+           "FeatureData" -> structure: parameter "feature_id" of String,
+           parameter "aliases" of mapping from String to list of String,
+           parameter "function" of String, parameter "location" of list of
+           type "Location" -> structure: parameter "contig_id" of String,
+           parameter "start" of Long, parameter "strand" of String, parameter
+           "length" of Long, parameter "feature_type" of String, parameter
+           "global_location" of type "Location" -> structure: parameter
+           "contig_id" of String, parameter "start" of Long, parameter
+           "strand" of String, parameter "length" of Long, parameter
+           "num_found" of Long
         """
         return self._client.call_method(
             'GenomeSearchUtil.search',

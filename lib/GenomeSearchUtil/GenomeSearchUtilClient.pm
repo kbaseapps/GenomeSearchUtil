@@ -125,6 +125,7 @@ column_sorting is a reference to a list containing 2 items:
 	1: (ascending) a GenomeSearchUtil.boolean
 boolean is an int
 SearchResult is a reference to a hash where the following keys are defined:
+	query has a value which is a string
 	start has a value which is an int
 	features has a value which is a reference to a list where each element is a GenomeSearchUtil.FeatureData
 	num_found has a value which is an int
@@ -134,6 +135,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	function has a value which is a string
 	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 	feature_type has a value which is a string
+	global_location has a value which is a GenomeSearchUtil.Location
 Location is a reference to a hash where the following keys are defined:
 	contig_id has a value which is a string
 	start has a value which is an int
@@ -159,6 +161,7 @@ column_sorting is a reference to a list containing 2 items:
 	1: (ascending) a GenomeSearchUtil.boolean
 boolean is an int
 SearchResult is a reference to a hash where the following keys are defined:
+	query has a value which is a string
 	start has a value which is an int
 	features has a value which is a reference to a list where each element is a GenomeSearchUtil.FeatureData
 	num_found has a value which is an int
@@ -168,6 +171,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	function has a value which is a string
 	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 	feature_type has a value which is a string
+	global_location has a value which is a GenomeSearchUtil.Location
 Location is a reference to a hash where the following keys are defined:
 	contig_id has a value which is a string
 	start has a value which is an int
@@ -475,6 +479,7 @@ aliases has a value which is a reference to a hash where the key is a string and
 function has a value which is a string
 location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 feature_type has a value which is a string
+global_location has a value which is a GenomeSearchUtil.Location
 
 </pre>
 
@@ -488,6 +493,7 @@ aliases has a value which is a reference to a hash where the key is a string and
 function has a value which is a string
 location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 feature_type has a value which is a string
+global_location has a value which is a GenomeSearchUtil.Location
 
 
 =end text
@@ -514,6 +520,7 @@ num_found - number of all items found in query search (with
 
 <pre>
 a reference to a hash where the following keys are defined:
+query has a value which is a string
 start has a value which is an int
 features has a value which is a reference to a list where each element is a GenomeSearchUtil.FeatureData
 num_found has a value which is an int
@@ -525,6 +532,7 @@ num_found has a value which is an int
 =begin text
 
 a reference to a hash where the following keys are defined:
+query has a value which is a string
 start has a value which is an int
 features has a value which is a reference to a list where each element is a GenomeSearchUtil.FeatureData
 num_found has a value which is an int

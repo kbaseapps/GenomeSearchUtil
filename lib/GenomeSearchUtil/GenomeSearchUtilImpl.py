@@ -20,8 +20,8 @@ class GenomeSearchUtil:
     # the latter method is running.
     #########################################
     VERSION = "0.0.1"
-    GIT_URL = ""
-    GIT_COMMIT_HASH = ""
+    GIT_URL = "https://github.com/kbaseapps/GenomeSearchUtil"
+    GIT_COMMIT_HASH = "195ee6934de8fdc6842319025f891fbde15da170"
     
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -45,21 +45,26 @@ class GenomeSearchUtil:
            @range [0,1]), parameter "start" of Long, parameter "limit" of Long
         :returns: instance of type "SearchResult" (num_found - number of all
            items found in query search (with only part of it returned in
-           "features" list).) -> structure: parameter "start" of Long,
-           parameter "features" of list of type "FeatureData" -> structure:
-           parameter "feature_id" of String, parameter "aliases" of mapping
-           from String to list of String, parameter "function" of String,
-           parameter "location" of list of type "Location" -> structure:
-           parameter "contig_id" of String, parameter "start" of Long,
-           parameter "strand" of String, parameter "length" of Long,
-           parameter "feature_type" of String, parameter "num_found" of Long
+           "features" list).) -> structure: parameter "query" of String,
+           parameter "start" of Long, parameter "features" of list of type
+           "FeatureData" -> structure: parameter "feature_id" of String,
+           parameter "aliases" of mapping from String to list of String,
+           parameter "function" of String, parameter "location" of list of
+           type "Location" -> structure: parameter "contig_id" of String,
+           parameter "start" of Long, parameter "strand" of String, parameter
+           "length" of Long, parameter "feature_type" of String, parameter
+           "global_location" of type "Location" -> structure: parameter
+           "contig_id" of String, parameter "start" of Long, parameter
+           "strand" of String, parameter "length" of Long, parameter
+           "num_found" of Long
         """
         # ctx is the context object
         # return variables are: result
         #BEGIN search
         result = self.indexer.search(ctx["token"], params.get("ref", None), 
                                      params.get("query", None), params.get("sort_by", None),
-                                     params.get("start", None), params.get("limit", None))
+                                     params.get("start", None), params.get("limit", None),
+                                     params.get("num_found", None))
         #END search
 
         # At some point might do deeper type checking...

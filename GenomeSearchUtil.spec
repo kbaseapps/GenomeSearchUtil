@@ -12,12 +12,20 @@ module GenomeSearchUtil {
 
     typedef tuple<string column, boolean ascending> column_sorting;
 
+    /*
+        num_found - optional field which when set informs that there
+            is no need to perform full scan in order to count this
+            value because it was already done before; please don't
+            set this value with 0 or any guessed number if you didn't 
+            get right value previously.
+    */
     typedef structure {
         string ref;
         string query;
         list<column_sorting> sort_by;
         int start;
         int limit;
+        int num_found;
     } SearchOptions;
 
     typedef structure {
@@ -41,6 +49,7 @@ module GenomeSearchUtil {
             only part of it returned in "features" list).
     */
     typedef structure {
+        string query;
         int start;
         list <FeatureData> features;
         int num_found;

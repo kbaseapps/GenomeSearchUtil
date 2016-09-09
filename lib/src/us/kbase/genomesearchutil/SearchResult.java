@@ -23,12 +23,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Generated("com.googlecode.jsonschema2pojo")
 @JsonPropertyOrder({
+    "query",
     "start",
     "features",
     "num_found"
 })
 public class SearchResult {
 
+    @JsonProperty("query")
+    private String query;
     @JsonProperty("start")
     private Long start;
     @JsonProperty("features")
@@ -36,6 +39,21 @@ public class SearchResult {
     @JsonProperty("num_found")
     private Long numFound;
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+
+    @JsonProperty("query")
+    public String getQuery() {
+        return query;
+    }
+
+    @JsonProperty("query")
+    public void setQuery(String query) {
+        this.query = query;
+    }
+
+    public SearchResult withQuery(String query) {
+        this.query = query;
+        return this;
+    }
 
     @JsonProperty("start")
     public Long getStart() {
@@ -94,7 +112,7 @@ public class SearchResult {
 
     @Override
     public String toString() {
-        return ((((((((("SearchResult"+" [start=")+ start)+", features=")+ features)+", numFound=")+ numFound)+", additionalProperties=")+ additionalProperties)+"]");
+        return ((((((((((("SearchResult"+" [query=")+ query)+", start=")+ start)+", features=")+ features)+", numFound=")+ numFound)+", additionalProperties=")+ additionalProperties)+"]");
     }
 
 }

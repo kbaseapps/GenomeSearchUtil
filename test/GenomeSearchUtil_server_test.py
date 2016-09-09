@@ -86,14 +86,17 @@ class GenomeSearchUtilTest(unittest.TestCase):
         data = self.getWsClient().get_object_subset([{"ref": ref, "included": [
                 "/scientific_name"]}])[0]
         genome_name = data["data"]["scientific_name"]
-        print("\nGenome " + genome_name + " (" + ref + "):")
+        print("\nGenome " + genome_name + ":")
         ret = self.getImpl().search(self.getContext(), {"ref": ref, "query": query,
                 "sort_by": [["feature_id", True]]})[0]
         self.assertTrue("num_found" in ret)
         print("And with loading skipped:")
-        self.getImpl().search(self.getContext(), {"ref": ref, "query": query,
+        ret = self.getImpl().search(self.getContext(), {"ref": ref, "query": query,
                 "sort_by": [["feature_type", False], ["contig_id", True], ["start", False]]})[0]
         print("And with both loading and sorting skipped:")
-        self.getImpl().search(self.getContext(), {"ref": ref, "query": query,
-                "sort_by": [["feature_type", False], ["contig_id", True], ["start", False]]})[0]
+        ret = self.getImpl().search(self.getContext(), {"ref": ref, "query": query,
+                "sort_by": [["feature_type", False], ["contig_id", True], ["start", False]],
+                "num_found": ret["num_found"]})[0]
         print("Features found for query [" + query + "]: " + str(ret["num_found"]))
+        #for feature in ret["features"]:
+        #    print(json.dumps(feature))
