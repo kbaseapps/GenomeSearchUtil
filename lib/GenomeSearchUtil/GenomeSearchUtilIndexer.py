@@ -166,7 +166,7 @@ class GenomeSearchUtilIndexer:
         return output_file
 
     def filter_query(self, index_file, query, start, limit, num_found):
-        query_words = query.lower().translate(
+        query_words = str(query).lower().translate(
                 string.maketrans("\r\n\t,", "    ")).split()
         if self.debug:
                 print("    Filtering...")
@@ -195,20 +195,22 @@ class GenomeSearchUtilIndexer:
             contig_id = items[3]
             strand = items[5]
             gloc = {"contig_id": contig_id, "start": int(items[4]),
-                          "strand": strand, "length": int(items[6])}
+                    "strand": strand, "length": int(items[6])}
             obj = json.loads(items[0])
             location = []
             if "l" in obj:
                 for loc in obj["l"]:
                     if len(loc) == 4:
-                        location.append(loc)
+                        location.append({"contig_id": loc[0], "start": loc[1],
+                                         "strand": loc[2], "length": loc[3]})
                     else:
-                        location.append([contig_id, loc[0], strand, loc[1]])
+                        location.append({"contig_id": contig_id, "start": loc[0],
+                                         "strand": strand, "length": loc[1]})
             else:
                 location.append(gloc)
             aliases = {}
             for alias in items[7].split(','):
-                aliases[alias] = "-"
+                aliases[alias] = []
             return {"location": location, "feature_id": items[1],
                     "feature_type": items[2], "global_location": gloc,
                     "aliases": aliases, "function": items[8]}
