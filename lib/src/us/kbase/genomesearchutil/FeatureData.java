@@ -14,7 +14,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 /**
  * <p>Original spec-file type: FeatureData</p>
- * 
+ * <pre>
+ * global_location - this is location-related properties that
+ *     are under sorting whereas items in "location" array are not
+ * feature_idx - legacy field keeping the position of feature in
+ *     feature array in legacy Genome object.
+ * </pre>
  * 
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -25,7 +30,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "function",
     "location",
     "feature_type",
-    "global_location"
+    "global_location",
+    "feature_idx"
 })
 public class FeatureData {
 
@@ -46,6 +52,8 @@ public class FeatureData {
      */
     @JsonProperty("global_location")
     private us.kbase.genomesearchutil.Location globalLocation;
+    @JsonProperty("feature_idx")
+    private Long featureIdx;
     private Map<java.lang.String, Object> additionalProperties = new HashMap<java.lang.String, Object>();
 
     @JsonProperty("feature_id")
@@ -148,6 +156,21 @@ public class FeatureData {
         return this;
     }
 
+    @JsonProperty("feature_idx")
+    public Long getFeatureIdx() {
+        return featureIdx;
+    }
+
+    @JsonProperty("feature_idx")
+    public void setFeatureIdx(Long featureIdx) {
+        this.featureIdx = featureIdx;
+    }
+
+    public FeatureData withFeatureIdx(Long featureIdx) {
+        this.featureIdx = featureIdx;
+        return this;
+    }
+
     @JsonAnyGetter
     public Map<java.lang.String, Object> getAdditionalProperties() {
         return this.additionalProperties;
@@ -160,7 +183,7 @@ public class FeatureData {
 
     @Override
     public java.lang.String toString() {
-        return ((((((((((((((("FeatureData"+" [featureId=")+ featureId)+", aliases=")+ aliases)+", function=")+ function)+", location=")+ location)+", featureType=")+ featureType)+", globalLocation=")+ globalLocation)+", additionalProperties=")+ additionalProperties)+"]");
+        return ((((((((((((((((("FeatureData"+" [featureId=")+ featureId)+", aliases=")+ aliases)+", function=")+ function)+", location=")+ location)+", featureType=")+ featureType)+", globalLocation=")+ globalLocation)+", featureIdx=")+ featureIdx)+", additionalProperties=")+ additionalProperties)+"]");
     }
 
 }

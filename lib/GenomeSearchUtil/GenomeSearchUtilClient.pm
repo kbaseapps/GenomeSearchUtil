@@ -120,6 +120,7 @@ SearchOptions is a reference to a hash where the following keys are defined:
 	sort_by has a value which is a reference to a list where each element is a GenomeSearchUtil.column_sorting
 	start has a value which is an int
 	limit has a value which is an int
+	num_found has a value which is an int
 column_sorting is a reference to a list containing 2 items:
 	0: (column) a string
 	1: (ascending) a GenomeSearchUtil.boolean
@@ -136,6 +137,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
+	feature_idx has a value which is an int
 Location is a reference to a hash where the following keys are defined:
 	contig_id has a value which is a string
 	start has a value which is an int
@@ -156,6 +158,7 @@ SearchOptions is a reference to a hash where the following keys are defined:
 	sort_by has a value which is a reference to a list where each element is a GenomeSearchUtil.column_sorting
 	start has a value which is an int
 	limit has a value which is an int
+	num_found has a value which is an int
 column_sorting is a reference to a list containing 2 items:
 	0: (column) a string
 	1: (ascending) a GenomeSearchUtil.boolean
@@ -172,6 +175,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
+	feature_idx has a value which is an int
 Location is a reference to a hash where the following keys are defined:
 	contig_id has a value which is a string
 	start has a value which is an int
@@ -235,6 +239,144 @@ Location is a reference to a hash where the following keys are defined:
     }
 }
  
+
+
+=head2 search_region
+
+  $result = $obj->search_region($params)
+
+=over 4
+
+=item Parameter and return types
+
+=begin html
+
+<pre>
+$params is a GenomeSearchUtil.SearchRegionOptions
+$result is a GenomeSearchUtil.SearchRegionResult
+SearchRegionOptions is a reference to a hash where the following keys are defined:
+	ref has a value which is a string
+	query_contig_id has a value which is a string
+	query_region_start has a value which is an int
+	query_region_length has a value which is an int
+	page_start has a value which is an int
+	page_limit has a value which is an int
+	num_found has a value which is an int
+SearchRegionResult is a reference to a hash where the following keys are defined:
+	query_contig_id has a value which is a string
+	query_region_start has a value which is an int
+	query_region_length has a value which is an int
+	page_start has a value which is an int
+	features has a value which is a reference to a list where each element is a GenomeSearchUtil.FeatureData
+	num_found has a value which is an int
+FeatureData is a reference to a hash where the following keys are defined:
+	feature_id has a value which is a string
+	aliases has a value which is a reference to a hash where the key is a string and the value is a reference to a list where each element is a string
+	function has a value which is a string
+	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
+	feature_type has a value which is a string
+	global_location has a value which is a GenomeSearchUtil.Location
+	feature_idx has a value which is an int
+Location is a reference to a hash where the following keys are defined:
+	contig_id has a value which is a string
+	start has a value which is an int
+	strand has a value which is a string
+	length has a value which is an int
+
+</pre>
+
+=end html
+
+=begin text
+
+$params is a GenomeSearchUtil.SearchRegionOptions
+$result is a GenomeSearchUtil.SearchRegionResult
+SearchRegionOptions is a reference to a hash where the following keys are defined:
+	ref has a value which is a string
+	query_contig_id has a value which is a string
+	query_region_start has a value which is an int
+	query_region_length has a value which is an int
+	page_start has a value which is an int
+	page_limit has a value which is an int
+	num_found has a value which is an int
+SearchRegionResult is a reference to a hash where the following keys are defined:
+	query_contig_id has a value which is a string
+	query_region_start has a value which is an int
+	query_region_length has a value which is an int
+	page_start has a value which is an int
+	features has a value which is a reference to a list where each element is a GenomeSearchUtil.FeatureData
+	num_found has a value which is an int
+FeatureData is a reference to a hash where the following keys are defined:
+	feature_id has a value which is a string
+	aliases has a value which is a reference to a hash where the key is a string and the value is a reference to a list where each element is a string
+	function has a value which is a string
+	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
+	feature_type has a value which is a string
+	global_location has a value which is a GenomeSearchUtil.Location
+	feature_idx has a value which is an int
+Location is a reference to a hash where the following keys are defined:
+	contig_id has a value which is a string
+	start has a value which is an int
+	strand has a value which is a string
+	length has a value which is an int
+
+
+=end text
+
+=item Description
+
+
+
+=back
+
+=cut
+
+ sub search_region
+{
+    my($self, @args) = @_;
+
+# Authentication: optional
+
+    if ((my $n = @args) != 1)
+    {
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error =>
+							       "Invalid argument count for function search_region (received $n, expecting 1)");
+    }
+    {
+	my($params) = @args;
+
+	my @_bad_arguments;
+        (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument 1 \"params\" (value was \"$params\")");
+        if (@_bad_arguments) {
+	    my $msg = "Invalid arguments passed to search_region:\n" . join("", map { "\t$_\n" } @_bad_arguments);
+	    Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
+								   method_name => 'search_region');
+	}
+    }
+
+    my $url = $self->{url};
+    my $result = $self->{client}->call($url, $self->{headers}, {
+	    method => "GenomeSearchUtil.search_region",
+	    params => \@args,
+    });
+    if ($result) {
+	if ($result->is_error) {
+	    Bio::KBase::Exceptions::JSONRPC->throw(error => $result->error_message,
+					       code => $result->content->{error}->{code},
+					       method_name => 'search_region',
+					       data => $result->content->{error}->{error} # JSON::RPC::ReturnObject only supports JSONRPC 1.1 or 1.O
+					      );
+	} else {
+	    return wantarray ? @{$result->result} : $result->result->[0];
+	}
+    } else {
+        Bio::KBase::Exceptions::HTTP->throw(error => "Error invoking method search_region",
+					    status_line => $self->{client}->status_line,
+					    method_name => 'search_region',
+				       );
+    }
+}
+ 
   
 sub status
 {
@@ -278,16 +420,16 @@ sub version {
             Bio::KBase::Exceptions::JSONRPC->throw(
                 error => $result->error_message,
                 code => $result->content->{code},
-                method_name => 'search',
+                method_name => 'search_region',
             );
         } else {
             return wantarray ? @{$result->result} : $result->result->[0];
         }
     } else {
         Bio::KBase::Exceptions::HTTP->throw(
-            error => "Error invoking method search",
+            error => "Error invoking method search_region",
             status_line => $self->{client}->status_line,
-            method_name => 'search',
+            method_name => 'search_region',
         );
     }
 }
@@ -394,6 +536,15 @@ a reference to a list containing 2 items:
 
 
 
+=item Description
+
+num_found - optional field which when set informs that there
+    is no need to perform full scan in order to count this
+    value because it was already done before; please don't
+    set this value with 0 or any guessed number if you didn't 
+    get right value previously.
+
+
 =item Definition
 
 =begin html
@@ -405,6 +556,7 @@ query has a value which is a string
 sort_by has a value which is a reference to a list where each element is a GenomeSearchUtil.column_sorting
 start has a value which is an int
 limit has a value which is an int
+num_found has a value which is an int
 
 </pre>
 
@@ -418,6 +570,7 @@ query has a value which is a string
 sort_by has a value which is a reference to a list where each element is a GenomeSearchUtil.column_sorting
 start has a value which is an int
 limit has a value which is an int
+num_found has a value which is an int
 
 
 =end text
@@ -468,6 +621,14 @@ length has a value which is an int
 
 
 
+=item Description
+
+global_location - this is location-related properties that
+    are under sorting whereas items in "location" array are not
+feature_idx - legacy field keeping the position of feature in
+    feature array in legacy Genome object.
+
+
 =item Definition
 
 =begin html
@@ -480,6 +641,7 @@ function has a value which is a string
 location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 feature_type has a value which is a string
 global_location has a value which is a GenomeSearchUtil.Location
+feature_idx has a value which is an int
 
 </pre>
 
@@ -494,6 +656,7 @@ function has a value which is a string
 location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 feature_type has a value which is a string
 global_location has a value which is a GenomeSearchUtil.Location
+feature_idx has a value which is an int
 
 
 =end text
@@ -534,6 +697,103 @@ num_found has a value which is an int
 a reference to a hash where the following keys are defined:
 query has a value which is a string
 start has a value which is an int
+features has a value which is a reference to a list where each element is a GenomeSearchUtil.FeatureData
+num_found has a value which is an int
+
+
+=end text
+
+=back
+
+
+
+=head2 SearchRegionOptions
+
+=over 4
+
+
+
+=item Description
+
+num_found - optional field which when set informs that there
+    is no need to perform full scan in order to count this
+    value because it was already done before; please don't
+    set this value with 0 or any guessed number if you didn't 
+    get right value previously.
+
+
+=item Definition
+
+=begin html
+
+<pre>
+a reference to a hash where the following keys are defined:
+ref has a value which is a string
+query_contig_id has a value which is a string
+query_region_start has a value which is an int
+query_region_length has a value which is an int
+page_start has a value which is an int
+page_limit has a value which is an int
+num_found has a value which is an int
+
+</pre>
+
+=end html
+
+=begin text
+
+a reference to a hash where the following keys are defined:
+ref has a value which is a string
+query_contig_id has a value which is a string
+query_region_start has a value which is an int
+query_region_length has a value which is an int
+page_start has a value which is an int
+page_limit has a value which is an int
+num_found has a value which is an int
+
+
+=end text
+
+=back
+
+
+
+=head2 SearchRegionResult
+
+=over 4
+
+
+
+=item Description
+
+num_found - number of all items found in query search (with 
+    only part of it returned in "features" list).
+
+
+=item Definition
+
+=begin html
+
+<pre>
+a reference to a hash where the following keys are defined:
+query_contig_id has a value which is a string
+query_region_start has a value which is an int
+query_region_length has a value which is an int
+page_start has a value which is an int
+features has a value which is a reference to a list where each element is a GenomeSearchUtil.FeatureData
+num_found has a value which is an int
+
+</pre>
+
+=end html
+
+=begin text
+
+a reference to a hash where the following keys are defined:
+query_contig_id has a value which is a string
+query_region_start has a value which is an int
+query_region_length has a value which is an int
+page_start has a value which is an int
 features has a value which is a reference to a list where each element is a GenomeSearchUtil.FeatureData
 num_found has a value which is an int
 

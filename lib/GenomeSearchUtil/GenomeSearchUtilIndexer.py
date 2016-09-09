@@ -7,6 +7,7 @@ import gzip
 import io
 import traceback
 import string
+import tempfile
 from biokbase.workspace.client import Workspace as workspaceService
 
 class GenomeSearchUtilIndexer:
@@ -55,8 +56,10 @@ class GenomeSearchUtilIndexer:
         return str(value)
 
     def save_tsv(self, features, inner_chsum):
-        target_file_path = os.path.join(self.genome_index_dir, inner_chsum + ".tsv")
-        with open(target_file_path, 'w') as outfile:
+        #target_file_path = os.path.join(self.genome_index_dir, inner_chsum + ".tsv")
+        outfile = tempfile.NamedTemporaryFile(dir = self.genome_index_dir,
+                prefix = inner_chsum + "_", suffix = ".tsv", delete=False)
+        with outfile:
             pos = 0
             for feature in features:
                 locations = feature["location"]
@@ -97,8 +100,10 @@ class GenomeSearchUtilIndexer:
                                         [obj_json, ft_id, ft_type, contig_id,
                                          ft_start, ft_strand, ft_length, ft_aliases, 
                                          ft_function]) + "\n")
-        subprocess.Popen(["gzip", target_file_path], 
+        subprocess.Popen(["gzip", outfile.name],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE).wait()
+        os.rename(outfile.name + ".gz", os.path.join(self.genome_index_dir, 
+                                                     inner_chsum + ".tsv.gz"))
 
     def check_cache(self, ref, token):
         ws_client = workspaceService(self.ws_url, token=token)
@@ -152,18 +157,23 @@ class GenomeSearchUtilIndexer:
             if not ascending_order:
                 sort_arg += "r"
             cmd += " " + sort_arg
-        output_file = os.path.join(self.genome_index_dir, inner_chsum + "_" + 
-                                   self.get_sorting_code(sort_by) + ".tsv.gz")
-        if not os.path.isfile(output_file):
+        fname = inner_chsum + "_" + self.get_sorting_code(sort_by)
+        final_output_file = os.path.join(self.genome_index_dir, fname + ".tsv.gz")
+        if not os.path.isfile(final_output_file):
+            outfile = tempfile.NamedTemporaryFile(dir = self.genome_index_dir,
+                    prefix = fname + "_", suffix = ".tsv.gz", delete=False)
+            outfile.close()
+            output_file = outfile.name
             if self.debug:
                 print("    Sorting...")
             t1 = time.time()
             cmd += " | gzip -c > \"" + output_file + "\""
             subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, 
                              stderr=subprocess.PIPE).wait()
+            os.rename(output_file, final_output_file)
             if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
-        return output_file
+        return final_output_file
 
     def filter_query(self, index_file, query, start, limit, num_found):
         query_words = str(query).lower().translate(
@@ -189,9 +199,10 @@ class GenomeSearchUtilIndexer:
         return {"num_found": fcount, "start": start, "features": features,
                 "query": query}
 
-    def unpack_feature(self, line):
+    def unpack_feature(self, line, items = None):
         try:
-            items = line.split('\t')
+            if items is None:
+                items = line.split('\t')
             contig_id = items[3]
             strand = items[5]
             gloc = {"contig_id": contig_id, "start": int(items[4]),
@@ -210,10 +221,76 @@ class GenomeSearchUtilIndexer:
                 location.append(gloc)
             aliases = {}
             for alias in items[7].split(','):
-                aliases[alias] = []
+                if alias:
+                    aliases[alias] = []
             return {"location": location, "feature_id": items[1],
                     "feature_type": items[2], "global_location": gloc,
-                    "aliases": aliases, "function": items[8]}
+                    "aliases": aliases, "function": items[8], 
+                    "feature_idx": obj["p"]}
         except:
             raise ValueError("Error parsing feature from: [" + line + "]\n" +
                              "Cause: " + traceback.format_exc())
+
+    def search_region(self, token, ref, query_contig_id, query_region_start,
+                      query_region_length, page_start, page_limit, num_found):
+        if query_contig_id is None:
+            raise ValueError("Parameter 'query_contig_id' should be set");
+        if query_region_start is None:
+            raise ValueError("Parameter 'query_region_start' should be set");
+        if query_region_length is None:
+            raise ValueError("Parameter 'query_region_length' should be set");
+        if page_start is None:
+            page_start = 0
+        if page_limit is None:
+            page_limit = 50
+        if self.debug:
+            print("Search region: genome=" + ref + ", query=[" +
+                  query_contig_id + ":" + str(query_region_start) + "+" + 
+                  str(query_region_length) + "], page_start=" + 
+                  str(page_start) + ", page_limit=" + str(page_limit))
+        t1 = time.time()
+        inner_chsum = self.check_cache(ref, token)
+        sort_by = [["contig_id", True], ["start", True]]
+        index_file = self.get_sorted_file_path(inner_chsum, sort_by)
+        ret = self.filter_query_region(index_file, query_contig_id,
+                                       query_region_start, query_region_length,
+                                       page_start, page_limit, num_found)
+        if self.debug:
+            print("    (overall-time=" + str(time.time() - t1) + ")")
+        return ret
+
+    def filter_query_region(self, index_file, query_contig_id, query_region_start,
+                            query_region_length, page_start, page_limit, num_found):
+        if self.debug:
+                print("    Filtering region...")
+        query = self.get_region(query_region_start, "+", query_region_length)
+        t1 = time.time()
+        fcount = 0
+        features = []
+        with io.TextIOWrapper(io.BufferedReader(gzip.open(index_file))) as infile:
+            for line in infile:
+                items = line.rstrip('\n').split('\t')
+                if items[3] == query_contig_id and self.intersect(query,
+                        self.get_region(int(items[4]), items[5], int(items[6]))):
+                    if fcount >= page_start and fcount < page_start + page_limit:
+                        features.append(self.unpack_feature(line.rstrip('\n')))
+                    fcount += 1
+                    if num_found is not None and fcount >= page_start + page_limit:
+                        # Having shortcut when real num_found was already known
+                        fcount = num_found
+                        break
+        if self.debug:
+                print("    (time=" + str(time.time() - t1) + ")")
+        return {"num_found": fcount, "page_start": page_start, "features": features,
+                "query_contig_id": query_contig_id, 
+                "query_region_start": query_region_start, 
+                "query_region_length": query_region_length}
+
+    def intersect(self, region1, region2):
+        return max(region1[0], region2[0]) <= min(region1[1], region2[1])
+
+    def get_region(self, start, strand, length):
+        fwd = strand == '+'
+        loc_min = start if fwd else (start - length + 1)
+        loc_max = start if not fwd else (start + length - 1)
+        return [loc_min, loc_max]

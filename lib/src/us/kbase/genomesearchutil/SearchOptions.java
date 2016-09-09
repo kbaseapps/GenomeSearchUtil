@@ -15,7 +15,13 @@ import us.kbase.common.service.Tuple2;
 
 /**
  * <p>Original spec-file type: SearchOptions</p>
- * 
+ * <pre>
+ * num_found - optional field which when set informs that there
+ *     is no need to perform full scan in order to count this
+ *     value because it was already done before; please don't
+ *     set this value with 0 or any guessed number if you didn't 
+ *     get right value previously.
+ * </pre>
  * 
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -25,7 +31,8 @@ import us.kbase.common.service.Tuple2;
     "query",
     "sort_by",
     "start",
-    "limit"
+    "limit",
+    "num_found"
 })
 public class SearchOptions {
 
@@ -39,6 +46,8 @@ public class SearchOptions {
     private java.lang.Long start;
     @JsonProperty("limit")
     private java.lang.Long limit;
+    @JsonProperty("num_found")
+    private java.lang.Long numFound;
     private Map<java.lang.String, Object> additionalProperties = new HashMap<java.lang.String, Object>();
 
     @JsonProperty("ref")
@@ -116,6 +125,21 @@ public class SearchOptions {
         return this;
     }
 
+    @JsonProperty("num_found")
+    public java.lang.Long getNumFound() {
+        return numFound;
+    }
+
+    @JsonProperty("num_found")
+    public void setNumFound(java.lang.Long numFound) {
+        this.numFound = numFound;
+    }
+
+    public SearchOptions withNumFound(java.lang.Long numFound) {
+        this.numFound = numFound;
+        return this;
+    }
+
     @JsonAnyGetter
     public Map<java.lang.String, Object> getAdditionalProperties() {
         return this.additionalProperties;
@@ -128,7 +152,7 @@ public class SearchOptions {
 
     @Override
     public java.lang.String toString() {
-        return ((((((((((((("SearchOptions"+" [ref=")+ ref)+", query=")+ query)+", sortBy=")+ sortBy)+", start=")+ start)+", limit=")+ limit)+", additionalProperties=")+ additionalProperties)+"]");
+        return ((((((((((((((("SearchOptions"+" [ref=")+ ref)+", query=")+ query)+", sortBy=")+ sortBy)+", start=")+ start)+", limit=")+ limit)+", numFound=")+ numFound)+", additionalProperties=")+ additionalProperties)+"]");
     }
 
 }

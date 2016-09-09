@@ -333,6 +333,10 @@ class Application(object):
                              name='GenomeSearchUtil.search',
                              types=[dict])
         self.method_authentication['GenomeSearchUtil.search'] = 'optional'
+        self.rpc_service.add(impl_GenomeSearchUtil.search_region,
+                             name='GenomeSearchUtil.search_region',
+                             types=[dict])
+        self.method_authentication['GenomeSearchUtil.search_region'] = 'optional'
         self.rpc_service.add(impl_GenomeSearchUtil.status,
                              name='GenomeSearchUtil.status',
                              types=[dict])

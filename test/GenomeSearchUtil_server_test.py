@@ -100,3 +100,11 @@ class GenomeSearchUtilTest(unittest.TestCase):
         print("Features found for query [" + query + "]: " + str(ret["num_found"]))
         #for feature in ret["features"]:
         #    print(json.dumps(feature))
+
+    def test_search_region(self):
+        ref = "KBasePublicGenomesV5/kb|g.0"
+        ret = self.getImpl().search_region(self.getContext(), {"ref": ref,
+                "query_contig_id": "kb|g.0.c.1", "query_region_start": 1000000,
+                "query_region_length": 10000, "page_limit": 5})[0]
+        print("Features found in region: " + str(ret["num_found"]))
+        self.assertEqual(10, ret["num_found"])

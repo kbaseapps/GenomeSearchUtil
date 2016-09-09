@@ -21,7 +21,7 @@ class GenomeSearchUtil:
     #########################################
     VERSION = "0.0.1"
     GIT_URL = "https://github.com/kbaseapps/GenomeSearchUtil"
-    GIT_COMMIT_HASH = "195ee6934de8fdc6842319025f891fbde15da170"
+    GIT_COMMIT_HASH = "df4492b9b40497645970ad5ac97f890816f9dc5f"
     
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -37,25 +37,34 @@ class GenomeSearchUtil:
 
     def search(self, ctx, params):
         """
-        :param params: instance of type "SearchOptions" -> structure:
-           parameter "ref" of String, parameter "query" of String, parameter
-           "sort_by" of list of type "column_sorting" -> tuple of size 2:
-           parameter "column" of String, parameter "ascending" of type
-           "boolean" (Indicates true or false values, false = 0, true = 1
-           @range [0,1]), parameter "start" of Long, parameter "limit" of Long
+        :param params: instance of type "SearchOptions" (num_found - optional
+           field which when set informs that there is no need to perform full
+           scan in order to count this value because it was already done
+           before; please don't set this value with 0 or any guessed number
+           if you didn't get right value previously.) -> structure: parameter
+           "ref" of String, parameter "query" of String, parameter "sort_by"
+           of list of type "column_sorting" -> tuple of size 2: parameter
+           "column" of String, parameter "ascending" of type "boolean"
+           (Indicates true or false values, false = 0, true = 1 @range
+           [0,1]), parameter "start" of Long, parameter "limit" of Long,
+           parameter "num_found" of Long
         :returns: instance of type "SearchResult" (num_found - number of all
            items found in query search (with only part of it returned in
            "features" list).) -> structure: parameter "query" of String,
            parameter "start" of Long, parameter "features" of list of type
-           "FeatureData" -> structure: parameter "feature_id" of String,
-           parameter "aliases" of mapping from String to list of String,
-           parameter "function" of String, parameter "location" of list of
+           "FeatureData" (global_location - this is location-related
+           properties that are under sorting whereas items in "location"
+           array are not feature_idx - legacy field keeping the position of
+           feature in feature array in legacy Genome object.) -> structure:
+           parameter "feature_id" of String, parameter "aliases" of mapping
+           from String to list of String, parameter "function" of String,
+           parameter "location" of list of type "Location" -> structure:
+           parameter "contig_id" of String, parameter "start" of Long,
+           parameter "strand" of String, parameter "length" of Long,
+           parameter "feature_type" of String, parameter "global_location" of
            type "Location" -> structure: parameter "contig_id" of String,
            parameter "start" of Long, parameter "strand" of String, parameter
-           "length" of Long, parameter "feature_type" of String, parameter
-           "global_location" of type "Location" -> structure: parameter
-           "contig_id" of String, parameter "start" of Long, parameter
-           "strand" of String, parameter "length" of Long, parameter
+           "length" of Long, parameter "feature_idx" of Long, parameter
            "num_found" of Long
         """
         # ctx is the context object
@@ -70,6 +79,57 @@ class GenomeSearchUtil:
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
             raise ValueError('Method search return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
+
+    def search_region(self, ctx, params):
+        """
+        :param params: instance of type "SearchRegionOptions" (num_found -
+           optional field which when set informs that there is no need to
+           perform full scan in order to count this value because it was
+           already done before; please don't set this value with 0 or any
+           guessed number if you didn't get right value previously.) ->
+           structure: parameter "ref" of String, parameter "query_contig_id"
+           of String, parameter "query_region_start" of Long, parameter
+           "query_region_length" of Long, parameter "page_start" of Long,
+           parameter "page_limit" of Long, parameter "num_found" of Long
+        :returns: instance of type "SearchRegionResult" (num_found - number
+           of all items found in query search (with only part of it returned
+           in "features" list).) -> structure: parameter "query_contig_id" of
+           String, parameter "query_region_start" of Long, parameter
+           "query_region_length" of Long, parameter "page_start" of Long,
+           parameter "features" of list of type "FeatureData"
+           (global_location - this is location-related properties that are
+           under sorting whereas items in "location" array are not
+           feature_idx - legacy field keeping the position of feature in
+           feature array in legacy Genome object.) -> structure: parameter
+           "feature_id" of String, parameter "aliases" of mapping from String
+           to list of String, parameter "function" of String, parameter
+           "location" of list of type "Location" -> structure: parameter
+           "contig_id" of String, parameter "start" of Long, parameter
+           "strand" of String, parameter "length" of Long, parameter
+           "feature_type" of String, parameter "global_location" of type
+           "Location" -> structure: parameter "contig_id" of String,
+           parameter "start" of Long, parameter "strand" of String, parameter
+           "length" of Long, parameter "feature_idx" of Long, parameter
+           "num_found" of Long
+        """
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN search_region
+        result = self.indexer.search_region(ctx["token"], params.get("ref", None), 
+                                            params.get("query_contig_id", None), 
+                                            params.get("query_region_start", None),
+                                            params.get("query_region_length", None),
+                                            params.get("page_start", None), 
+                                            params.get("page_limit", None),
+                                            params.get("num_found", None))
+        #END search_region
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method search_region return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]
