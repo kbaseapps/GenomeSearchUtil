@@ -76,7 +76,6 @@ class GenomeSearchUtilIndexer:
                 ft_strand = ""
                 ft_start = ""
                 ft_length = ""
-                obj["l"] = []
 
                 if "location" in feature:
                     locations = feature["location"]
