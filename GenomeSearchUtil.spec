@@ -96,4 +96,46 @@ module GenomeSearchUtil {
 
     funcdef search_region(SearchRegionOptions params) returns (SearchRegionResult result) authentication optional;
 
+    /*
+        num_found - optional field which when set informs that there
+            is no need to perform full scan in order to count this
+            value because it was already done before; please don't
+            set this value with 0 or any guessed number if you didn't 
+            get right value previously.
+    */
+    typedef structure {
+        string ref;
+        string query;
+        list<column_sorting> sort_by;
+        int start;
+        int limit;
+        int num_found;
+    } SearchContigsOptions;
+
+    /*
+        global_location - this is location-related properties that
+            are under sorting whereas items in "location" array are not
+        feature_idx - legacy field keeping the position of feature in
+            feature array in legacy Genome object.
+    */
+    typedef structure {
+        string contig_id;
+        int length;
+        int feature_count;
+    } ContigData;
+
+    /*
+        num_found - number of all items found in query search (with 
+            only part of it returned in "features" list).
+    */
+    typedef structure {
+        string query;
+        int start;
+        list<ContigData> contigs;
+        int num_found;
+    } SearchContigsResult;
+
+    funcdef search_contigs(SearchContigsOptions params) 
+        returns (SearchContigsResult result) authentication optional;
+
 };

@@ -3,8 +3,6 @@ import os
 import json
 import time
 import subprocess
-import gzip
-import io
 import traceback
 import string
 import tempfile
@@ -33,6 +31,7 @@ class GenomeSearchUtilIndexer:
         if not os.path.isdir(self.genome_index_dir):
             os.makedirs(self.genome_index_dir)
         self.debug = True  #"debug" in config and config["debug"] == "1"
+        self.max_sort_mem_size = 250000
     
     def search(self, token, ref, query, sort_by, start, limit, num_found):
         if query is None:
@@ -46,9 +45,9 @@ class GenomeSearchUtilIndexer:
                   self.get_sorting_code(self.feature_column_props_map, sort_by) +
                   "], start=" + str(start) + ", limit=" + str(limit))
         t1 = time.time()
-        inner_chsum = self.check_cache(ref, token)
+        inner_chsum = self.check_feature_cache(ref, token)
         index_iter = self.get_feature_sorted_iterator(inner_chsum, sort_by)
-        ret = self.filter_query(index_iter, query, start, limit, num_found)
+        ret = self.filter_feature_query(index_iter, query, start, limit, num_found)
         if self.debug:
             print("    (overall-time=" + str(time.time() - t1) + ")")
         return ret
@@ -118,7 +117,7 @@ class GenomeSearchUtilIndexer:
         os.rename(outfile.name + ".gz", os.path.join(self.genome_index_dir, 
                                                      inner_chsum + "_ftr.tsv.gz"))
 
-    def check_cache(self, ref, token):
+    def check_feature_cache(self, ref, token):
         ws_client = workspaceService(self.ws_url, token=token)
         info = ws_client.get_object_info_new({"objects": [{"ref": ref}]})[0]
         inner_chsum = info[8]
@@ -158,13 +157,14 @@ class GenomeSearchUtilIndexer:
         return self.get_sorted_iterator(inner_chsum, sort_by, "ftr", 
                                         self.feature_column_props_map)
 
-    def get_sorted_iterator(self, inner_chsum, sort_by, type, column_props_map):
+    def get_sorted_iterator(self, inner_chsum, sort_by, item_type, 
+                            column_props_map):
         input_file = os.path.join(self.genome_index_dir, inner_chsum + "_" + 
-                                  type + ".tsv.gz")
+                                  item_type + ".tsv.gz")
         if not os.path.isfile(input_file):
             raise ValueError("File not found: " + input_file)
         if sort_by is None or len(sort_by) == 0:
-            return input_file
+            return CombinedLineIterator(input_file)
         cmd = "gunzip -c \"" + input_file + "\" | sort -f -t\\\t"
         for column_sorting in sort_by:
             col_name = column_sorting[0]
@@ -175,14 +175,14 @@ class GenomeSearchUtilIndexer:
             if not ascending_order:
                 sort_arg += "r"
             cmd += " " + sort_arg
-        fname = (inner_chsum + "_" + type + "_" +
+        fname = (inner_chsum + "_" + item_type + "_" +
                  self.get_sorting_code(column_props_map, sort_by))
         final_output_file = os.path.join(self.genome_index_dir, fname + ".tsv.gz")
         if not os.path.isfile(final_output_file):
             if self.debug:
                 print("    Sorting...")
             t1 = time.time()
-            need_to_save = os.path.getsize(input_file) > 250000
+            need_to_save = os.path.getsize(input_file) > self.max_sort_mem_size
             if need_to_save:
                 outfile = tempfile.NamedTemporaryFile(dir = self.genome_index_dir,
                         prefix = fname + "_", suffix = ".tsv.gz", delete=False)
@@ -202,36 +202,29 @@ class GenomeSearchUtilIndexer:
                     print("    (time=" + str(time.time() - t1) + ")")
         return CombinedLineIterator(final_output_file)
 
-    def filter_query(self, index_iter, query, start, limit, num_found):
+    def filter_feature_query(self, index_iter, query, start, limit, num_found):
         query_words = str(query).lower().translate(
                 string.maketrans("\r\n\t,", "    ")).split()
         if self.debug:
                 print("    Filtering...")
         t1 = time.time()
-        fcount = [0]
+        fcount = 0
         features = []
         with index_iter:
             for line in index_iter:
-                if self.filter_line_need_exit(query_words, start, limit, 
-                        num_found, line, features, fcount):
-                    break
+                line2 = line[line.index('\t') + 1:]
+                if all(word in line2.lower() for word in query_words):
+                    if fcount >= start and fcount < start + limit:
+                        features.append(self.unpack_feature(line.rstrip('\n')))
+                    fcount += 1
+                    if num_found is not None and fcount >= start + limit:
+                        # Having shortcut when real num_found was already known
+                        fcount = num_found
+                        break
         if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
-        return {"num_found": fcount[0], "start": start, "features": features,
+        return {"num_found": fcount, "start": start, "features": features,
                 "query": query}
-
-    def filter_line_need_exit(self, query_words, start, limit, num_found, line, 
-                            features, fcount):
-        line2 = line[line.index('\t') + 1:]
-        if all(word in line2.lower() for word in query_words):
-            if fcount[0] >= start and fcount[0] < start + limit:
-                features.append(self.unpack_feature(line.rstrip('\n')))
-            fcount[0] += 1
-            if num_found is not None and fcount[0] >= start + limit:
-                # Having shortcut when real num_found was already known
-                fcount[0] = num_found
-                return True
-        return False
 
     def unpack_feature(self, line, items = None):
         try:
@@ -285,7 +278,7 @@ class GenomeSearchUtilIndexer:
                   str(query_region_length) + "], page_start=" + 
                   str(page_start) + ", page_limit=" + str(page_limit))
         t1 = time.time()
-        inner_chsum = self.check_cache(ref, token)
+        inner_chsum = self.check_feature_cache(ref, token)
         sort_by = [["contig_id", True], ["start", True]]
         index_iter = self.get_feature_sorted_iterator(inner_chsum, sort_by)
         ret = self.filter_query_region(index_iter, query_contig_id,
@@ -301,35 +294,31 @@ class GenomeSearchUtilIndexer:
                 print("    Filtering region...")
         query = self.get_region(query_region_start, "+", query_region_length)
         t1 = time.time()
-        fcount = [0]
+        fcount = 0
         features = []
         with index_iter:
             for line in index_iter:
-                if self.filter_region_line(line, query_contig_id, query, 
-                        page_start, page_limit, num_found, fcount, features):
-                    break
+                items = line.rstrip('\n').split('\t')
+                contig_id = items[3]
+                start = items[4]
+                strand = items[5]
+                length = items[6]
+                if contig_id and strand and start and length:
+                    if contig_id == query_contig_id and self.intersect(query,
+                            self.get_region(int(start), strand, int(length))):
+                        if fcount >= page_start and fcount < page_start + page_limit:
+                            features.append(self.unpack_feature(line.rstrip('\n')))
+                        fcount += 1
+                        if num_found is not None and fcount >= page_start + page_limit:
+                            # Having shortcut when real num_found was already known
+                            fcount = num_found
+                            break
         if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
-        return {"num_found": fcount[0], "page_start": page_start, 
+        return {"num_found": fcount, "page_start": page_start, 
                 "features": features, "query_contig_id": query_contig_id, 
                 "query_region_start": query_region_start, 
                 "query_region_length": query_region_length}
-
-    def filter_region_line(self, line, query_contig_id, query, page_start, 
-                           page_limit, num_found, fcount, features):
-        items = line.rstrip('\n').split('\t')
-        # contig_id=>item[3], strand=>items[5], start=>items[6], length=>items[6]
-        if items[3] and items[5] and items[4] and items[6]:
-            if items[3] == query_contig_id and self.intersect(query,
-                    self.get_region(int(items[4]), items[5], int(items[6]))):
-                if fcount[0] >= page_start and fcount[0] < page_start + page_limit:
-                    features.append(self.unpack_feature(line.rstrip('\n')))
-                fcount[0] += 1
-                if num_found is not None and fcount[0] >= page_start + page_limit:
-                    # Having shortcut when real num_found was already known
-                    fcount[0] = num_found
-                    return True
-        return False
 
     def intersect(self, region1, region2):
         return max(region1[0], region2[0]) <= min(region1[1], region2[1])
@@ -349,7 +338,7 @@ class GenomeSearchUtilIndexer:
             limit = 50
         if self.debug:
             print("Search contigs: genome=" + ref + ", query=[" + query + "], " +
-                  "sort-by=[" + self.get_sorting_code(self.feature_column_props_map, 
+                  "sort-by=[" + self.get_sorting_code(self.contig_column_props_map, 
                   sort_by) + "], start=" + str(start) + ", limit=" + str(limit))
         t1 = time.time()
         inner_chsum = self.check_contig_cache(ref, token)
@@ -365,16 +354,19 @@ class GenomeSearchUtilIndexer:
         inner_chsum = info[8]
         index_file = os.path.join(self.genome_index_dir, inner_chsum + "_ctg.tsv.gz")
         if not os.path.isfile(index_file):
-            if self.debug:
-                print("    Loading WS object...")
-            t1 = time.time()
-            inner_chsum = self.check_cache(ref, token)
+            inner_chsum = self.check_feature_cache(ref, token)
+            # Reading features without sorting
             index_iter = self.get_feature_sorted_iterator(inner_chsum, None)
+            if self.debug:
+                print("    Grouping features...")
+            t1 = time.time()
             contigs = {}
             with index_iter:
                 for line in index_iter:
                     items = line.rstrip('\n').split('\t')
                     contig_id = items[3]
+                    if not contig_id:
+                        continue
                     values = None
                     if contig_id in contigs:
                         values = contigs[contig_id]
@@ -427,7 +419,7 @@ class GenomeSearchUtilIndexer:
                     if num_found is not None and fcount >= start + limit:
                         # Having shortcut when real num_found was already known
                         fcount = num_found
-                        return True
+                        break
         if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
         return {"num_found": fcount, "start": start, "contigs": contigs,

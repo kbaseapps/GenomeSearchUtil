@@ -21,7 +21,7 @@ class GenomeSearchUtil:
     #########################################
     VERSION = "0.0.1"
     GIT_URL = "https://github.com/kbaseapps/GenomeSearchUtil"
-    GIT_COMMIT_HASH = "df4492b9b40497645970ad5ac97f890816f9dc5f"
+    GIT_COMMIT_HASH = "861ec5a3283ede3e45378841820d885516168c7e"
     
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -70,9 +70,12 @@ class GenomeSearchUtil:
         # ctx is the context object
         # return variables are: result
         #BEGIN search
-        result = self.indexer.search(ctx["token"], params.get("ref", None), 
-                                     params.get("query", None), params.get("sort_by", None),
-                                     params.get("start", None), params.get("limit", None),
+        result = self.indexer.search(ctx["token"], 
+                                     params.get("ref", None), 
+                                     params.get("query", None), 
+                                     params.get("sort_by", None),
+                                     params.get("start", None), 
+                                     params.get("limit", None),
                                      params.get("num_found", None))
         #END search
 
@@ -118,7 +121,8 @@ class GenomeSearchUtil:
         # ctx is the context object
         # return variables are: result
         #BEGIN search_region
-        result = self.indexer.search_region(ctx["token"], params.get("ref", None), 
+        result = self.indexer.search_region(ctx["token"], 
+                                            params.get("ref", None), 
                                             params.get("query_contig_id", None), 
                                             params.get("query_region_start", None),
                                             params.get("query_region_length", None),
@@ -130,6 +134,49 @@ class GenomeSearchUtil:
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
             raise ValueError('Method search_region return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
+
+    def search_contigs(self, ctx, params):
+        """
+        :param params: instance of type "SearchContigsOptions" (num_found -
+           optional field which when set informs that there is no need to
+           perform full scan in order to count this value because it was
+           already done before; please don't set this value with 0 or any
+           guessed number if you didn't get right value previously.) ->
+           structure: parameter "ref" of String, parameter "query" of String,
+           parameter "sort_by" of list of type "column_sorting" -> tuple of
+           size 2: parameter "column" of String, parameter "ascending" of
+           type "boolean" (Indicates true or false values, false = 0, true =
+           1 @range [0,1]), parameter "start" of Long, parameter "limit" of
+           Long, parameter "num_found" of Long
+        :returns: instance of type "SearchContigsResult" (num_found - number
+           of all items found in query search (with only part of it returned
+           in "features" list).) -> structure: parameter "query" of String,
+           parameter "start" of Long, parameter "contigs" of list of type
+           "ContigData" (global_location - this is location-related
+           properties that are under sorting whereas items in "location"
+           array are not feature_idx - legacy field keeping the position of
+           feature in feature array in legacy Genome object.) -> structure:
+           parameter "contig_id" of String, parameter "length" of Long,
+           parameter "feature_count" of Long, parameter "num_found" of Long
+        """
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN search_contigs
+        result = self.indexer.search_contigs(ctx["token"], 
+                                             params.get("ref", None), 
+                                             params.get("query", None), 
+                                             params.get("sort_by", None),
+                                             params.get("start", None), 
+                                             params.get("limit", None),
+                                             params.get("num_found", None))
+        #END search_contigs
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method search_contigs return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]

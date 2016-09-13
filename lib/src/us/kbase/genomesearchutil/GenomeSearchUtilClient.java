@@ -196,6 +196,23 @@ public class GenomeSearchUtilClient {
         return res.get(0);
     }
 
+    /**
+     * <p>Original spec-file function name: search_contigs</p>
+     * <pre>
+     * </pre>
+     * @param   params   instance of type {@link us.kbase.genomesearchutil.SearchContigsOptions SearchContigsOptions}
+     * @return   parameter "result" of type {@link us.kbase.genomesearchutil.SearchContigsResult SearchContigsResult}
+     * @throws IOException if an IO exception occurs
+     * @throws JsonClientException if a JSON RPC exception occurs
+     */
+    public SearchContigsResult searchContigs(SearchContigsOptions params, RpcContext... jsonRpcContext) throws IOException, JsonClientException {
+        List<Object> args = new ArrayList<Object>();
+        args.add(params);
+        TypeReference<List<SearchContigsResult>> retType = new TypeReference<List<SearchContigsResult>>() {};
+        List<SearchContigsResult> res = caller.jsonrpcCall("GenomeSearchUtil.search_contigs", args, retType, true, false, jsonRpcContext, this.serviceVersion);
+        return res.get(0);
+    }
+
     public Map<String, Object> status(RpcContext... jsonRpcContext) throws IOException, JsonClientException {
         List<Object> args = new ArrayList<Object>();
         TypeReference<List<Map<String, Object>>> retType = new TypeReference<List<Map<String, Object>>>() {};
