@@ -67,37 +67,46 @@ class GenomeSearchUtilIndexer:
         with outfile:
             pos = 0
             for feature in features:
-                locations = feature["location"]
                 obj = {"p": pos}
                 pos += 1
                 ft_id = self.to_text(feature, "id")
                 ft_type = self.to_text(feature, "type")
-                contig_id = locations[0][0]
-                ft_strand = locations[0][2]
-                ft_start = None
-                ft_length = None
-                if len(locations) == 1:
-                    ft_start = str(locations[0][1])
-                    ft_length = str(locations[0][3])
-                else:
-                    ft_fwd = ft_strand == '+'
-                    ft_min = None
-                    ft_max = None
-                    loc_to_save = []
-                    for loc in locations:
-                        if loc[0] == contig_id and loc[2] == ft_strand:
-                            loc_min = loc[1] if ft_fwd else (loc[1] - loc[3] + 1)
-                            loc_max = loc[1] if not ft_fwd else (loc[1] + loc[3] - 1)
-                            if ft_min is None or ft_min > loc_min:
-                                ft_min = loc_min
-                            if ft_max is None or ft_max < loc_max:
-                                ft_max = loc_max
-                            loc_to_save.append([loc[1], loc[3]])
+
+                contig_id = ""
+                ft_strand = ""
+                ft_start = ""
+                ft_length = ""
+                obj["l"] = []
+
+                if "location" in feature:
+                    locations = feature["location"]
+                    if len(locations)>0:
+                        contig_id = locations[0][0]
+                        ft_strand = locations[0][2]
+                        ft_start = None
+                        ft_length = None
+                        if len(locations) == 1:
+                            ft_start = str(locations[0][1])
+                            ft_length = str(locations[0][3])
                         else:
-                            loc_to_save.append(loc)
-                    ft_start = str(ft_min if ft_fwd else ft_max)
-                    ft_length = str(ft_max + 1 - ft_min)
-                    obj["l"] = loc_to_save
+                            ft_fwd = ft_strand == '+'
+                            ft_min = None
+                            ft_max = None
+                            loc_to_save = []
+                            for loc in locations:
+                                if loc[0] == contig_id and loc[2] == ft_strand:
+                                    loc_min = loc[1] if ft_fwd else (loc[1] - loc[3] + 1)
+                                    loc_max = loc[1] if not ft_fwd else (loc[1] + loc[3] - 1)
+                                    if ft_min is None or ft_min > loc_min:
+                                        ft_min = loc_min
+                                    if ft_max is None or ft_max < loc_max:
+                                        ft_max = loc_max
+                                    loc_to_save.append([loc[1], loc[3]])
+                                else:
+                                    loc_to_save.append(loc)
+                            ft_start = str(ft_min if ft_fwd else ft_max)
+                            ft_length = str(ft_max + 1 - ft_min)
+                            obj["l"] = loc_to_save
                 obj_json = json.dumps(obj)
                 ft_aliases = self.to_text(feature, "aliases")
                 ft_function = self.to_text(feature, "function").replace("\t", " ")
@@ -231,8 +240,10 @@ class GenomeSearchUtilIndexer:
                 items = line.split('\t')
             contig_id = items[3]
             strand = items[5]
-            gloc = {"contig_id": contig_id, "start": int(items[4]),
-                    "strand": strand, "length": int(items[6])}
+            gloc = {}
+            if contig_id and strand and items[4] and items[6]:
+                gloc = {"contig_id": contig_id, "start": int(items[4]),
+                        "strand": strand, "length": int(items[6])}
             obj = json.loads(items[0])
             location = []
             if "l" in obj:
@@ -308,15 +319,17 @@ class GenomeSearchUtilIndexer:
     def filter_region_line(self, line, query_contig_id, query, page_start, 
                            page_limit, num_found, fcount, features):
         items = line.rstrip('\n').split('\t')
-        if items[3] == query_contig_id and self.intersect(query,
-                self.get_region(int(items[4]), items[5], int(items[6]))):
-            if fcount[0] >= page_start and fcount[0] < page_start + page_limit:
-                features.append(self.unpack_feature(line.rstrip('\n')))
-            fcount[0] += 1
-            if num_found is not None and fcount[0] >= page_start + page_limit:
-                # Having shortcut when real num_found was already known
-                fcount[0] = num_found
-                return True
+        # contig_id=>item[3], strand=>items[5], start=>items[6], length=>items[6]
+        if items[3] and items[5] and items[4] and items[6]:
+            if items[3] == query_contig_id and self.intersect(query,
+                    self.get_region(int(items[4]), items[5], int(items[6]))):
+                if fcount[0] >= page_start and fcount[0] < page_start + page_limit:
+                    features.append(self.unpack_feature(line.rstrip('\n')))
+                fcount[0] += 1
+                if num_found is not None and fcount[0] >= page_start + page_limit:
+                    # Having shortcut when real num_found was already known
+                    fcount[0] = num_found
+                    return True
         return False
 
     def intersect(self, region1, region2):
