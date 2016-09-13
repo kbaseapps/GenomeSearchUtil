@@ -115,7 +115,7 @@ class GenomeSearchUtilTest(unittest.TestCase):
         self.assertTrue("num_found" in ret)
         self.assertEqual(ret["num_found"],0)
 
-    def skip_test_search_region(self):
+    def test_search_region(self):
         ref = "KBasePublicGenomesV5/kb|g.0"
         ret = self.getImpl().search_region(self.getContext(), {"ref": ref,
                 "query_contig_id": "kb|g.0.c.1", "query_region_start": 1000000,
