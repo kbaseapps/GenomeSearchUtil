@@ -101,6 +101,20 @@ class GenomeSearchUtilTest(unittest.TestCase):
         #for feature in ret["features"]:
         #    print(json.dumps(feature))
 
+    def test_genome_with_no_feature_locations(self):
+        genome_ref = "KBaseExampleData/Transcriptome_Sbi_shoots_ABA_upregulated"
+        ret = self.getImpl().search(self.getContext(), {"ref": genome_ref, "query": "Sb01g000360.1.CDS",
+                "sort_by": [["feature_id", True]]})[0]
+        self.assertTrue("num_found" in ret)
+        self.assertEqual(ret["num_found"],1)
+
+        ret = self.getImpl().search_region(self.getContext(), {"ref": genome_ref,
+                "query_contig_id": "", "query_region_start": 100,
+                "query_region_length": 10000, "page_limit": 5,
+                "num_found": ret["num_found"]})[0]
+        self.assertTrue("num_found" in ret)
+        self.assertEqual(ret["num_found"],0)
+
     def test_search_region(self):
         ref = "KBasePublicGenomesV5/kb|g.0"
         ret = self.getImpl().search_region(self.getContext(), {"ref": ref,
