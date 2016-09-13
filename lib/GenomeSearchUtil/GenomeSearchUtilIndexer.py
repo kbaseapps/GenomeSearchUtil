@@ -160,19 +160,27 @@ class GenomeSearchUtilIndexer:
         fname = inner_chsum + "_" + self.get_sorting_code(sort_by)
         final_output_file = os.path.join(self.genome_index_dir, fname + ".tsv.gz")
         if not os.path.isfile(final_output_file):
-            outfile = tempfile.NamedTemporaryFile(dir = self.genome_index_dir,
-                    prefix = fname + "_", suffix = ".tsv.gz", delete=False)
-            outfile.close()
-            output_file = outfile.name
             if self.debug:
                 print("    Sorting...")
             t1 = time.time()
-            cmd += " | gzip -c > \"" + output_file + "\""
-            subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, 
-                             stderr=subprocess.PIPE).wait()
-            os.rename(output_file, final_output_file)
-            if self.debug:
-                print("    (time=" + str(time.time() - t1) + ")")
+            need_to_save = os.path.getsize(input_file) > 250000
+            if need_to_save:
+                outfile = tempfile.NamedTemporaryFile(dir = self.genome_index_dir,
+                        prefix = fname + "_", suffix = ".tsv.gz", delete=False)
+                outfile.close()
+                output_file = outfile.name
+                cmd += " | gzip -c > \"" + output_file + "\""
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, 
+                                 stderr=subprocess.PIPE)
+            if not need_to_save:
+                if self.debug:
+                    print("    (time=" + str(time.time() - t1) + ")")
+                return p
+            else:
+                p.wait()
+                os.rename(output_file, final_output_file)
+                if self.debug:
+                    print("    (time=" + str(time.time() - t1) + ")")
         return final_output_file
 
     def filter_query(self, index_file, query, start, limit, num_found):
@@ -181,23 +189,45 @@ class GenomeSearchUtilIndexer:
         if self.debug:
                 print("    Filtering...")
         t1 = time.time()
-        fcount = 0
+        fcount = [0]
         features = []
-        with io.TextIOWrapper(io.BufferedReader(gzip.open(index_file))) as infile:
-            for line in infile:
-                line2 = line[line.index('\t') + 1:]
-                if all(word in line2.lower() for word in query_words):
-                    if fcount >= start and fcount < start + limit:
-                        features.append(self.unpack_feature(line.rstrip('\n')))
-                    fcount += 1
-                    if num_found is not None and fcount >= start + limit:
-                        # Having shortcut when real num_found was already known
-                        fcount = num_found
+        if isinstance(index_file, basestring):
+            with io.TextIOWrapper(io.BufferedReader(gzip.open(index_file))) as f1:
+                for line in f1:
+                    if self.filter_line_need_exit(query_words, start, limit, 
+                            num_found, line, features, fcount):
                         break
+        else:  # index_file is a Process, let's read output of it
+            try:
+                while True:
+                    line = index_file.stdout.readline()
+                    if line == '' and index_file.poll() is not None:
+                        break
+                    if line:
+                        if self.filter_line_need_exit(query_words, start, limit, 
+                                num_found, line, features, fcount):
+                            break
+            finally:
+                # Let's kill the process in case there is an error
+                if index_file.poll() is None:
+                    index_file.kill()
         if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
-        return {"num_found": fcount, "start": start, "features": features,
+        return {"num_found": fcount[0], "start": start, "features": features,
                 "query": query}
+
+    def filter_line_need_exit(self, query_words, start, limit, num_found, line, 
+                            features, fcount):
+        line2 = line[line.index('\t') + 1:]
+        if all(word in line2.lower() for word in query_words):
+            if fcount[0] >= start and fcount[0] < start + limit:
+                features.append(self.unpack_feature(line.rstrip('\n')))
+            fcount[0] += 1
+            if num_found is not None and fcount[0] >= start + limit:
+                # Having shortcut when real num_found was already known
+                fcount[0] = num_found
+                return True
+        return False
 
     def unpack_feature(self, line, items = None):
         try:
@@ -265,26 +295,50 @@ class GenomeSearchUtilIndexer:
                 print("    Filtering region...")
         query = self.get_region(query_region_start, "+", query_region_length)
         t1 = time.time()
-        fcount = 0
+        fcount = [0]
         features = []
-        with io.TextIOWrapper(io.BufferedReader(gzip.open(index_file))) as infile:
-            for line in infile:
-                items = line.rstrip('\n').split('\t')
-                if items[3] == query_contig_id and self.intersect(query,
-                        self.get_region(int(items[4]), items[5], int(items[6]))):
-                    if fcount >= page_start and fcount < page_start + page_limit:
-                        features.append(self.unpack_feature(line.rstrip('\n')))
-                    fcount += 1
-                    if num_found is not None and fcount >= page_start + page_limit:
-                        # Having shortcut when real num_found was already known
-                        fcount = num_found
+        if isinstance(index_file, basestring):
+            with io.TextIOWrapper(io.BufferedReader(gzip.open(index_file))) as f1:
+                for line in f1:
+                    if self.filter_region_line(line, query_contig_id, query, 
+                            page_start, page_limit, num_found, fcount, features):
                         break
+        else:  # index_file is a Process, let's read output of it
+            try:
+                while True:
+                    line = index_file.stdout.readline()
+                    if line == '' and index_file.poll() is not None:
+                        break
+                    if line:
+                        if self.filter_region_line(line, query_contig_id, query, 
+                                page_start, page_limit, num_found, fcount, features):
+                            break
+            finally:
+                # Let's kill the process in case there is an error
+                if index_file.poll() is None:
+                    if self.debug:
+                        print("    Killing the process...")
+                    index_file.kill()
         if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
-        return {"num_found": fcount, "page_start": page_start, "features": features,
-                "query_contig_id": query_contig_id, 
+        return {"num_found": fcount[0], "page_start": page_start, 
+                "features": features, "query_contig_id": query_contig_id, 
                 "query_region_start": query_region_start, 
                 "query_region_length": query_region_length}
+
+    def filter_region_line(self, line, query_contig_id, query, page_start, 
+                           page_limit, num_found, fcount, features):
+        items = line.rstrip('\n').split('\t')
+        if items[3] == query_contig_id and self.intersect(query,
+                self.get_region(int(items[4]), items[5], int(items[6]))):
+            if fcount[0] >= page_start and fcount[0] < page_start + page_limit:
+                features.append(self.unpack_feature(line.rstrip('\n')))
+            fcount[0] += 1
+            if num_found is not None and fcount[0] >= page_start + page_limit:
+                # Having shortcut when real num_found was already known
+                fcount[0] = num_found
+                return True
+        return False
 
     def intersect(self, region1, region2):
         return max(region1[0], region2[0]) <= min(region1[1], region2[1])

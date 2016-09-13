@@ -108,3 +108,7 @@ class GenomeSearchUtilTest(unittest.TestCase):
                 "query_region_length": 10000, "page_limit": 5})[0]
         print("Features found in region: " + str(ret["num_found"]))
         self.assertEqual(10, ret["num_found"])
+        self.getImpl().search_region(self.getContext(), {"ref": ref,
+                "query_contig_id": "kb|g.0.c.1", "query_region_start": 1000000,
+                "query_region_length": 10000, "page_limit": 5, 
+                "num_found": ret["num_found"]})[0]
