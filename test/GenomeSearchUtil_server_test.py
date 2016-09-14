@@ -107,13 +107,14 @@ class GenomeSearchUtilTest(unittest.TestCase):
                 "sort_by": [["feature_id", True]]})[0]
         self.assertTrue("num_found" in ret)
         self.assertEqual(ret["num_found"],1)
-
+        # And search region
         ret = self.getImpl().search_region(self.getContext(), {"ref": genome_ref,
                 "query_contig_id": "", "query_region_start": 100,
                 "query_region_length": 10000, "page_limit": 5,
                 "num_found": ret["num_found"]})[0]
         self.assertTrue("num_found" in ret)
         self.assertEqual(ret["num_found"],0)
+        self.assertIsNone(ret["contig_length"])
 
     def test_search_region(self):
         ref = "KBasePublicGenomesV5/kb|g.0"
@@ -121,18 +122,29 @@ class GenomeSearchUtilTest(unittest.TestCase):
                 "query_contig_id": "kb|g.0.c.1", "query_region_start": 1000000,
                 "query_region_length": 10000, "page_limit": 5})[0]
         print("Features found in region: " + str(ret["num_found"]))
-        self.assertEqual(10, ret["num_found"])
-        self.getImpl().search_region(self.getContext(), {"ref": ref,
+        print("Contig length: " + str(ret["contig_length"]))
+        ret = self.getImpl().search_region(self.getContext(), {"ref": ref,
                 "query_contig_id": "kb|g.0.c.1", "query_region_start": 1000000,
                 "query_region_length": 10000, "page_limit": 5, 
                 "num_found": ret["num_found"]})[0]
+        self.assertEqual(10, ret["num_found"])
+        self.assertEqual(4639221, ret["contig_length"])
 
     def test_search_configs(self):
         ref = "KBasePublicGenomesV5/kb|g.23390"
         ret = self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
                 "query": "", "sort_by": [["length", False]]})[0]
         self.assertTrue("num_found" in ret)
-        self.assertEqual(ret["num_found"], 5732)
+        self.assertEqual(ret["num_found"], 25680)
         self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
                 "query": "", "sort_by": [["length", False]],
                 "num_found": ret["num_found"]})[0]
+        ref = "KBaseExampleData/Transcriptome_Sbi_shoots_ABA_upregulated"
+        ret = self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
+                "query": "", "sort_by": [["length", False]]})[0]
+        self.assertEqual(ret["num_found"], 0)
+        # And example of Genome object with reference to Assembly object
+        ref = "10882/13/1"
+        ret = self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
+                "query": "", "sort_by": [["length", False]]})[0]
+        self.assertEqual(ret["num_found"], 1)

@@ -30,7 +30,7 @@ class GenomeSearchUtilIndexer:
         self.genome_index_dir = config["genome-index-dir"]
         if not os.path.isdir(self.genome_index_dir):
             os.makedirs(self.genome_index_dir)
-        self.debug = True  #"debug" in config and config["debug"] == "1"
+        self.debug = "debug" in config and config["debug"] == "1"
         self.max_sort_mem_size = 250000
     
     def search(self, token, ref, query, sort_by, start, limit, num_found):
@@ -70,12 +70,10 @@ class GenomeSearchUtilIndexer:
                 pos += 1
                 ft_id = self.to_text(feature, "id")
                 ft_type = self.to_text(feature, "type")
-
                 contig_id = ""
                 ft_strand = ""
                 ft_start = ""
                 ft_length = ""
-
                 if "location" in feature:
                     locations = feature["location"]
                     if len(locations)>0:
@@ -126,10 +124,10 @@ class GenomeSearchUtilIndexer:
             if self.debug:
                 print("    Loading WS object...")
             t1 = time.time()
-            genome = ws_client.get_object_subset([{"ref": ref, "included": [
+            genome = ws_client.get_objects2({"objects": [{"ref": ref, "included": [
                     "/features/[*]/id", "/features/[*]/type", 
                     "/features/[*]/function", "/features/[*]/aliases", 
-                    "/features/[*]/location"]}])[0]["data"]
+                    "/features/[*]/location"]}]})["data"][0]["data"]
             self.save_feature_tsv(genome["features"], inner_chsum)
             if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
@@ -138,7 +136,7 @@ class GenomeSearchUtilIndexer:
     def get_column_props(self, column_props_map, col_name):
         if col_name not in column_props_map:
             raise ValueError("Unknown column name '" + col_name + "', " +
-                    "please use one of " + str(self.column_props_map.keys()))
+                             "please use one of " + str(column_props_map.keys()))
         return column_props_map[col_name]
 
     def get_sorting_code(self, column_props_map, sort_by):
@@ -284,6 +282,8 @@ class GenomeSearchUtilIndexer:
         ret = self.filter_query_region(index_iter, query_contig_id,
                                        query_region_start, query_region_length,
                                        page_start, page_limit, num_found)
+        contig = self.get_contig(token, ref, query_contig_id)
+        ret["contig_length"] = None if not contig else contig["length"]
         if self.debug:
             print("    (overall-time=" + str(time.time() - t1) + ")")
         return ret
@@ -314,7 +314,7 @@ class GenomeSearchUtilIndexer:
                             fcount = num_found
                             break
         if self.debug:
-                print("    (time=" + str(time.time() - t1) + ")")
+            print("    (time=" + str(time.time() - t1) + ")")
         return {"num_found": fcount, "page_start": page_start, 
                 "features": features, "query_contig_id": query_contig_id, 
                 "query_region_start": query_region_start, 
@@ -348,19 +348,46 @@ class GenomeSearchUtilIndexer:
             print("    (overall-time=" + str(time.time() - t1) + ")")
         return ret
 
-    def check_contig_cache(self, ref, token):
+    def check_contig_cache(self, gref, token):
         ws_client = workspaceService(self.ws_url, token=token)
-        info = ws_client.get_object_info_new({"objects": [{"ref": ref}]})[0]
+        info = ws_client.get_object_info_new({"objects": [{"ref": gref}]})[0]
         inner_chsum = info[8]
         index_file = os.path.join(self.genome_index_dir, inner_chsum + "_ctg.tsv.gz")
         if not os.path.isfile(index_file):
-            inner_chsum = self.check_feature_cache(ref, token)
-            # Reading features without sorting
+            t1 = time.time()
+            genome = ws_client.get_objects2({"objects": [{"ref": gref, "included":
+                    ["/contigset_ref", "/assembly_ref"]}]})["data"][0]["data"]
+            ctg_ref = None
+            ctg_incl = None
+            if "contigset_ref" in genome:
+                if self.debug:
+                    print("    Loading contigs from ContigSet...")
+                ctg_ref = genome["contigset_ref"]
+                ctg_incl = ["/contigs/[*]/id", "/contigs/[*]/length"]
+            elif "assembly_ref" in genome:
+                if self.debug:
+                    print("    Loading contigs from Assembly...")
+                ctg_ref = genome["assembly_ref"]
+                ctg_incl = ["/contigs/*/length"]
+            # We allow now Genome objects without contigs. Just skip errors.
+            contigs = {}
+            if ctg_ref:
+                assembly = ws_client.get_objects2({"objects": [{"included": ctg_incl,
+                        "ref": gref, "obj_ref_path": [ctg_ref]}]})["data"][0]["data"]
+                if "contigset_ref" in genome:
+                    for ctg in assembly["contigs"]:
+                        contigs[ctg["id"]] = [ctg["length"], 0]
+                else:
+                    for ctg_id in assembly["contigs"]:
+                        contigs[ctg_id] = [assembly["contigs"][ctg_id]["length"], 0]
+                if self.debug:
+                    print("    (time=" + str(time.time() - t1) + ")")
+            inner_chsum = self.check_feature_cache(gref, token)
+            # Reading features without sorting and grouping by contig_id
             index_iter = self.get_feature_sorted_iterator(inner_chsum, None)
             if self.debug:
                 print("    Grouping features...")
             t1 = time.time()
-            contigs = {}
             with index_iter:
                 for line in index_iter:
                     items = line.rstrip('\n').split('\t')
@@ -371,13 +398,8 @@ class GenomeSearchUtilIndexer:
                     if contig_id in contigs:
                         values = contigs[contig_id]
                     else:
-                        values = [0, 0]
-                        contigs[contig_id] = values
+                        raise ValueError("Contig id=" + contig_id + " is not found")
                     values[1] += 1
-                    region = self.get_region(int(items[4]), items[5], int(items[6]))
-                    loc_max = region[1]
-                    if values[0] < loc_max:
-                        values[0] = loc_max
             self.save_contig_tsv(contigs, inner_chsum)
             if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
@@ -437,3 +459,19 @@ class GenomeSearchUtilIndexer:
         except:
             raise ValueError("Error parsing feature from: [" + line + "]\n" +
                              "Cause: " + traceback.format_exc())
+
+    def get_contig(self, token, ref, contig_id):
+        t1 = time.time()
+        inner_chsum = self.check_contig_cache(ref, token)
+        ret = None
+        with self.get_contig_sorted_iterator(inner_chsum, None) as index_iter:
+            if self.debug:
+                print("    Looking for contig id=" + contig_id + ", genome=" + ref)
+            for line in index_iter:
+                contig = self.unpack_contig(line.rstrip('\n'))
+                if contig["contig_id"] == contig_id:
+                    ret = contig
+                    break
+        if self.debug:
+            print("    (time=" + str(time.time() - t1) + ")")
+        return ret

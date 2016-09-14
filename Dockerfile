@@ -7,6 +7,14 @@ MAINTAINER KBase Developer
 
 # RUN apt-get update
 
+RUN mkdir -p /kb/module && \
+    cd /kb/module && \
+    git clone https://github.com/kbase/workspace_deluxe && \
+    cd workspace_deluxe && \
+    git checkout 837ad4c && \
+    rm -rf /kb/deployment/lib/biokbase/workspace && \
+    cp -vr lib/biokbase/workspace /kb/deployment/lib/biokbase/workspace
+
 # -----------------------------------------
 
 COPY ./ /kb/module
