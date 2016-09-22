@@ -15,10 +15,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 /**
  * <p>Original spec-file type: FeatureData</p>
  * <pre>
- * global_location - this is location-related properties that
- *     are under sorting whereas items in "location" array are not
+ * aliases - mapping from alias name (key) to set of alias sources 
+ *     (value),
+ * global_location - this is location-related properties that are
+ *     under sorting whereas items in "location" array are not,
  * feature_idx - legacy field keeping the position of feature in
- *     feature array in legacy Genome object.
+ *     feature array in legacy Genome object,
+ * ontology_terms - mapping from term ID (key) to term name (value).
  * </pre>
  * 
  */
@@ -31,7 +34,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "location",
     "feature_type",
     "global_location",
-    "feature_idx"
+    "feature_idx",
+    "ontology_terms"
 })
 public class FeatureData {
 
@@ -54,6 +58,8 @@ public class FeatureData {
     private us.kbase.genomesearchutil.Location globalLocation;
     @JsonProperty("feature_idx")
     private Long featureIdx;
+    @JsonProperty("ontology_terms")
+    private Map<String, String> ontologyTerms;
     private Map<java.lang.String, Object> additionalProperties = new HashMap<java.lang.String, Object>();
 
     @JsonProperty("feature_id")
@@ -171,6 +177,21 @@ public class FeatureData {
         return this;
     }
 
+    @JsonProperty("ontology_terms")
+    public Map<String, String> getOntologyTerms() {
+        return ontologyTerms;
+    }
+
+    @JsonProperty("ontology_terms")
+    public void setOntologyTerms(Map<String, String> ontologyTerms) {
+        this.ontologyTerms = ontologyTerms;
+    }
+
+    public FeatureData withOntologyTerms(Map<String, String> ontologyTerms) {
+        this.ontologyTerms = ontologyTerms;
+        return this;
+    }
+
     @JsonAnyGetter
     public Map<java.lang.String, Object> getAdditionalProperties() {
         return this.additionalProperties;
@@ -183,7 +204,7 @@ public class FeatureData {
 
     @Override
     public java.lang.String toString() {
-        return ((((((((((((((((("FeatureData"+" [featureId=")+ featureId)+", aliases=")+ aliases)+", function=")+ function)+", location=")+ location)+", featureType=")+ featureType)+", globalLocation=")+ globalLocation)+", featureIdx=")+ featureIdx)+", additionalProperties=")+ additionalProperties)+"]");
+        return ((((((((((((((((((("FeatureData"+" [featureId=")+ featureId)+", aliases=")+ aliases)+", function=")+ function)+", location=")+ location)+", featureType=")+ featureType)+", globalLocation=")+ globalLocation)+", featureIdx=")+ featureIdx)+", ontologyTerms=")+ ontologyTerms)+", additionalProperties=")+ additionalProperties)+"]");
     }
 
 }

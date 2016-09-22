@@ -138,6 +138,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
 	feature_idx has a value which is an int
+	ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 Location is a reference to a hash where the following keys are defined:
 	contig_id has a value which is a string
 	start has a value which is an int
@@ -176,6 +177,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
 	feature_idx has a value which is an int
+	ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 Location is a reference to a hash where the following keys are defined:
 	contig_id has a value which is a string
 	start has a value which is an int
@@ -277,6 +279,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
 	feature_idx has a value which is an int
+	ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 Location is a reference to a hash where the following keys are defined:
 	contig_id has a value which is a string
 	start has a value which is an int
@@ -314,6 +317,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
 	feature_idx has a value which is an int
+	ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 Location is a reference to a hash where the following keys are defined:
 	contig_id has a value which is a string
 	start has a value which is an int
@@ -745,10 +749,13 @@ length has a value which is an int
 
 =item Description
 
-global_location - this is location-related properties that
-    are under sorting whereas items in "location" array are not
+aliases - mapping from alias name (key) to set of alias sources 
+    (value),
+global_location - this is location-related properties that are
+    under sorting whereas items in "location" array are not,
 feature_idx - legacy field keeping the position of feature in
-    feature array in legacy Genome object.
+    feature array in legacy Genome object,
+ontology_terms - mapping from term ID (key) to term name (value).
 
 
 =item Definition
@@ -764,6 +771,7 @@ location has a value which is a reference to a list where each element is a Geno
 feature_type has a value which is a string
 global_location has a value which is a GenomeSearchUtil.Location
 feature_idx has a value which is an int
+ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 
 </pre>
 
@@ -779,6 +787,7 @@ location has a value which is a reference to a list where each element is a Geno
 feature_type has a value which is a string
 global_location has a value which is a GenomeSearchUtil.Location
 feature_idx has a value which is an int
+ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 
 
 =end text

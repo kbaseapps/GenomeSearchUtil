@@ -148,3 +148,12 @@ class GenomeSearchUtilTest(unittest.TestCase):
         ret = self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
                 "query": "", "sort_by": [["length", False]]})[0]
         self.assertEqual(ret["num_found"], 1)
+
+    def test_ontology(self):
+        genome_ref = "Phytozome_Genomes/3702_Phytozome_TAIR10"
+        ret = self.getImpl().search(self.getContext(), {"ref": genome_ref,
+                "query": "GO:0006355 regulation of transcription DNA-templated",
+                "limit": 1})[0]
+        self.assertTrue(ret["num_found"] > 0)
+        self.assertTrue(len(ret["features"]) > 0)
+        self.assertTrue("," in ret["features"][0]["ontology_terms"]["GO:0006355"])

@@ -8,7 +8,8 @@ class CombinedLineIterator:
 
     def __init__(self, source):
         if isinstance(source, basestring):
-            self.index_file = io.TextIOWrapper(io.BufferedReader(gzip.open(source)))
+            self.index_file = io.TextIOWrapper(io.BufferedReader(gzip.open(source)),
+                                               encoding="utf-8")
             self.process = None
         else:
             self.process = source

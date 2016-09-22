@@ -32,6 +32,7 @@ class GenomeSearchUtilIndexer:
             os.makedirs(self.genome_index_dir)
         self.debug = "debug" in config and config["debug"] == "1"
         self.max_sort_mem_size = 250000
+        self.unicode_comma = u"\uFF0C"
     
     def search(self, token, ref, query, sort_by, start, limit, num_found):
         if query is None:
@@ -106,10 +107,20 @@ class GenomeSearchUtilIndexer:
                 obj_json = json.dumps(obj)
                 ft_aliases = self.to_text(feature, "aliases")
                 ft_function = self.to_text(feature, "function").replace("\t", " ")
-                outfile.write("\t".join(x for x in 
-                                        [obj_json, ft_id, ft_type, contig_id,
-                                         ft_start, ft_strand, ft_length, ft_aliases, 
-                                         ft_function]) + "\n")
+                ontology_terms = []
+                if "ontology_terms" in feature:
+                    for ont_type in feature["ontology_terms"]:
+                        ont_map = feature["ontology_terms"][ont_type]
+                        for term_id in ont_map:
+                            term_name = ont_map[term_id].get("term_name", "")
+                            ontology_terms.append(term_id.replace(",", self.unicode_comma))
+                            ontology_terms.append(term_name.replace(",", self.unicode_comma))
+                ft_ontology = ",".join(x for x in ontology_terms if x)
+                line = u"\t".join(x for x in 
+                                  [obj_json, ft_id, ft_type, contig_id,
+                                   ft_start, ft_strand, ft_length, ft_aliases, 
+                                   ft_function, ft_ontology]) + u"\n"
+                outfile.write(line.encode("utf-8"))
         subprocess.Popen(["gzip", outfile.name],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE).wait()
         os.rename(outfile.name + ".gz", os.path.join(self.genome_index_dir, 
@@ -125,9 +136,9 @@ class GenomeSearchUtilIndexer:
                 print("    Loading WS object...")
             t1 = time.time()
             genome = ws_client.get_objects2({"objects": [{"ref": ref, "included": [
-                    "/features/[*]/id", "/features/[*]/type", 
-                    "/features/[*]/function", "/features/[*]/aliases", 
-                    "/features/[*]/location"]}]})["data"][0]["data"]
+                    "/features/[*]/id", "/features/[*]/type", "/features/[*]/function", 
+                    "/features/[*]/aliases", "/features/[*]/location",
+                    "/features/[*]/ontology_terms/*/*/term_name"]}]})["data"][0]["data"]
             self.save_feature_tsv(genome["features"], inner_chsum)
             if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
@@ -250,10 +261,19 @@ class GenomeSearchUtilIndexer:
             for alias in items[7].split(','):
                 if alias:
                     aliases[alias] = []
+            ontology_terms = {}
+            ontology_iter = iter(items[9].split(','))
+            while True:
+                try:
+                    term_id = next(ontology_iter).replace(self.unicode_comma, ",")
+                    term_name = next(ontology_iter).replace(self.unicode_comma, ",")
+                    ontology_terms[term_id] = term_name
+                except StopIteration:
+                    break
             return {"location": location, "feature_id": items[1],
                     "feature_type": items[2], "global_location": gloc,
                     "aliases": aliases, "function": items[8], 
-                    "feature_idx": obj["p"]}
+                    "feature_idx": obj["p"], "ontology_terms": ontology_terms}
         except:
             raise ValueError("Error parsing feature from: [" + line + "]\n" +
                              "Cause: " + traceback.format_exc())

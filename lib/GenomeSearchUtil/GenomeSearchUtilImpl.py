@@ -21,7 +21,7 @@ class GenomeSearchUtil:
     #########################################
     VERSION = "0.0.1"
     GIT_URL = "https://github.com/kbaseapps/GenomeSearchUtil"
-    GIT_COMMIT_HASH = "861ec5a3283ede3e45378841820d885516168c7e"
+    GIT_COMMIT_HASH = "837128eb9392ef02296a4b33d69686424cbf030a"
     
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -52,10 +52,12 @@ class GenomeSearchUtil:
            items found in query search (with only part of it returned in
            "features" list).) -> structure: parameter "query" of String,
            parameter "start" of Long, parameter "features" of list of type
-           "FeatureData" (global_location - this is location-related
+           "FeatureData" (aliases - mapping from alias name (key) to set of
+           alias sources (value), global_location - this is location-related
            properties that are under sorting whereas items in "location"
-           array are not feature_idx - legacy field keeping the position of
-           feature in feature array in legacy Genome object.) -> structure:
+           array are not, feature_idx - legacy field keeping the position of
+           feature in feature array in legacy Genome object, ontology_terms -
+           mapping from term ID (key) to term name (value).) -> structure:
            parameter "feature_id" of String, parameter "aliases" of mapping
            from String to list of String, parameter "function" of String,
            parameter "location" of list of type "Location" -> structure:
@@ -65,6 +67,7 @@ class GenomeSearchUtil:
            type "Location" -> structure: parameter "contig_id" of String,
            parameter "start" of Long, parameter "strand" of String, parameter
            "length" of Long, parameter "feature_idx" of Long, parameter
+           "ontology_terms" of mapping from String to String, parameter
            "num_found" of Long
         """
         # ctx is the context object
@@ -102,11 +105,13 @@ class GenomeSearchUtil:
            in "features" list).) -> structure: parameter "query_contig_id" of
            String, parameter "query_region_start" of Long, parameter
            "query_region_length" of Long, parameter "page_start" of Long,
-           parameter "features" of list of type "FeatureData"
-           (global_location - this is location-related properties that are
-           under sorting whereas items in "location" array are not
+           parameter "features" of list of type "FeatureData" (aliases -
+           mapping from alias name (key) to set of alias sources (value),
+           global_location - this is location-related properties that are
+           under sorting whereas items in "location" array are not,
            feature_idx - legacy field keeping the position of feature in
-           feature array in legacy Genome object.) -> structure: parameter
+           feature array in legacy Genome object, ontology_terms - mapping
+           from term ID (key) to term name (value).) -> structure: parameter
            "feature_id" of String, parameter "aliases" of mapping from String
            to list of String, parameter "function" of String, parameter
            "location" of list of type "Location" -> structure: parameter
@@ -116,6 +121,7 @@ class GenomeSearchUtil:
            "Location" -> structure: parameter "contig_id" of String,
            parameter "start" of Long, parameter "strand" of String, parameter
            "length" of Long, parameter "feature_idx" of Long, parameter
+           "ontology_terms" of mapping from String to String, parameter
            "num_found" of Long
         """
         # ctx is the context object

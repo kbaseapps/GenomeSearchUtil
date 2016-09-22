@@ -36,19 +36,23 @@ module GenomeSearchUtil {
     } Location;
 
     /*
-        global_location - this is location-related properties that
-            are under sorting whereas items in "location" array are not
+        aliases - mapping from alias name (key) to set of alias sources 
+            (value),
+        global_location - this is location-related properties that are
+            under sorting whereas items in "location" array are not,
         feature_idx - legacy field keeping the position of feature in
-            feature array in legacy Genome object.
+            feature array in legacy Genome object,
+        ontology_terms - mapping from term ID (key) to term name (value).
     */
     typedef structure {
         string feature_id;
-        mapping <string, list<string>> aliases;
+        mapping<string, list<string>> aliases;
         string function;
         list<Location> location;
         string feature_type;
         Location global_location;
         int feature_idx;
+        mapping<string, string> ontology_terms;
     } FeatureData;
 
     /*
@@ -58,7 +62,7 @@ module GenomeSearchUtil {
     typedef structure {
         string query;
         int start;
-        list <FeatureData> features;
+        list<FeatureData> features;
         int num_found;
     } SearchResult;
 
@@ -90,7 +94,7 @@ module GenomeSearchUtil {
         int query_region_start;
         int query_region_length;
         int page_start;
-        list <FeatureData> features;
+        list<FeatureData> features;
         int num_found;
     } SearchRegionResult;
 
