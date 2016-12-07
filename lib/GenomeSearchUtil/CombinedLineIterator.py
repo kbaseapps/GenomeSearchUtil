@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import gzip
 import io
+import codecs
 
 # This class helps iterate over lines in .gz files or over lines in subprocess 
 # output depending on source type.
@@ -35,7 +36,7 @@ class CombinedLineIterator:
         else:
             line = None
             while True:
-                line = self.process.stdout.readline()
+                line = self.process.stdout.readline().decode('utf-8')
                 if line == '' and self.process.poll() is not None:
                     raise StopIteration
                 if line:
