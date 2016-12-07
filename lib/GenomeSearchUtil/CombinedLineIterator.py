@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import gzip
 import io
-import codecs
 
 # This class helps iterate over lines in .gz files or over lines in subprocess 
 # output depending on source type.
