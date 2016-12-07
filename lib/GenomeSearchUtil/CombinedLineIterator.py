@@ -35,7 +35,7 @@ class CombinedLineIterator:
         else:
             line = None
             while True:
-                line = self.process.stdout.readline()
+                line = self.process.stdout.readline().decode('utf-8')
                 if line == '' and self.process.poll() is not None:
                     raise StopIteration
                 if line:
