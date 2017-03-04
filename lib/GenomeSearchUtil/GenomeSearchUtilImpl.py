@@ -13,16 +13,16 @@ class GenomeSearchUtil:
     A KBase module: GenomeSearchUtil
     '''
 
-    ######## WARNING FOR GEVENT USERS #######
+    ######## WARNING FOR GEVENT USERS ####### noqa
     # Since asynchronous IO can lead to methods - even the same method -
     # interrupting each other, you must be *very* careful when using global
     # state. A method could easily clobber the state set by another while
     # the latter method is running.
-    #########################################
-    VERSION = "0.0.1"
+    ######################################### noqa
+    VERSION = "0.0.2"
     GIT_URL = "https://github.com/kbaseapps/GenomeSearchUtil"
-    GIT_COMMIT_HASH = "837128eb9392ef02296a4b33d69686424cbf030a"
-    
+    GIT_COMMIT_HASH = "fd1eabe25704419a4a3a0d538c43a8d173b220b6"
+
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
 
@@ -33,7 +33,7 @@ class GenomeSearchUtil:
         self.indexer = GenomeSearchUtilIndexer(config)
         #END_CONSTRUCTOR
         pass
-    
+
 
     def search(self, ctx, params):
         """
@@ -186,7 +186,6 @@ class GenomeSearchUtil:
                              'result is not type dict as required.')
         # return the results
         return [result]
-
     def status(self, ctx):
         #BEGIN_STATUS
         returnVal = {'state': "OK", 'message': "", 'version': self.VERSION, 

@@ -20,7 +20,7 @@ from GenomeSearchUtil.authclient import KBaseAuth as _KBaseAuth
 
 DEPLOY = 'KB_DEPLOYMENT_CONFIG'
 SERVICE = 'KB_SERVICE_NAME'
-AUTH = 'auth-server-url'
+AUTH = 'auth-service-url'
 
 # Note that the error fields do not match the 2.0 JSONRPC spec
 
@@ -45,7 +45,7 @@ def get_config():
 
 config = get_config()
 
-from GenomeSearchUtil.GenomeSearchUtilImpl import GenomeSearchUtil  # @IgnorePep8
+from GenomeSearchUtil.GenomeSearchUtilImpl import GenomeSearchUtil  # noqa @IgnorePep8
 impl_GenomeSearchUtil = GenomeSearchUtil(config)
 
 
@@ -109,7 +109,11 @@ class JSONRPCServiceCustom(JSONRPCService):
             # Exception was raised inside the method.
             newerr = JSONServerError()
             newerr.trace = traceback.format_exc()
-            newerr.data = e.message
+            if isinstance(e.message, basestring):
+                newerr.data = e.message
+            else:
+                # Some exceptions embed other exceptions as the message
+                newerr.data = repr(e.message)
             raise newerr
         return result
 
@@ -171,7 +175,7 @@ class JSONRPCServiceCustom(JSONRPCService):
 
     def _handle_request(self, ctx, request):
         """Handles given request and returns its response."""
-        if self.method_data[request['method']].has_key('types'): # @IgnorePep8
+        if self.method_data[request['method']].has_key('types'):  # noqa @IgnorePep8
             self._validate_params_types(request['method'], request['params'])
 
         result = self._call_method(ctx, request)
@@ -332,15 +336,15 @@ class Application(object):
         self.rpc_service.add(impl_GenomeSearchUtil.search,
                              name='GenomeSearchUtil.search',
                              types=[dict])
-        self.method_authentication['GenomeSearchUtil.search'] = 'optional'
+        self.method_authentication['GenomeSearchUtil.search'] = 'optional'  # noqa
         self.rpc_service.add(impl_GenomeSearchUtil.search_region,
                              name='GenomeSearchUtil.search_region',
                              types=[dict])
-        self.method_authentication['GenomeSearchUtil.search_region'] = 'optional'
+        self.method_authentication['GenomeSearchUtil.search_region'] = 'optional'  # noqa
         self.rpc_service.add(impl_GenomeSearchUtil.search_contigs,
                              name='GenomeSearchUtil.search_contigs',
                              types=[dict])
-        self.method_authentication['GenomeSearchUtil.search_contigs'] = 'optional'
+        self.method_authentication['GenomeSearchUtil.search_contigs'] = 'optional'  # noqa
         self.rpc_service.add(impl_GenomeSearchUtil.status,
                              name='GenomeSearchUtil.status',
                              types=[dict])
@@ -396,7 +400,8 @@ class Application(object):
                         if token is None and auth_req == 'required':
                             err = JSONServerError()
                             err.data = (
-                                'Authentication required for GenomeSearchUtil ' +
+                                'Authentication required for ' +
+                                'GenomeSearchUtil ' +
                                 'but no authentication header was passed')
                             raise err
                         elif token is None and auth_req == 'optional':
@@ -428,7 +433,7 @@ class Application(object):
                            }
                     trace = jre.trace if hasattr(jre, 'trace') else None
                     rpc_result = self.process_error(err, ctx, req, trace)
-                except Exception, e:
+                except Exception:
                     err = {'error': {'code': 0,
                                      'name': 'Unexpected Server Error',
                                      'message': 'An unexpected server error ' +
@@ -438,10 +443,10 @@ class Application(object):
                     rpc_result = self.process_error(err, ctx, req,
                                                     traceback.format_exc())
 
-        # print 'The request method was %s\n' % environ['REQUEST_METHOD']
-        # print 'The environment dictionary is:\n%s\n' % pprint.pformat(environ) @IgnorePep8
-        # print 'The request body was: %s' % request_body
-        # print 'The result from the method call is:\n%s\n' % \
+        # print 'Request method was %s\n' % environ['REQUEST_METHOD']
+        # print 'Environment dictionary is:\n%s\n' % pprint.pformat(environ)
+        # print 'Request body was: %s' % request_body
+        # print 'Result from the method call is:\n%s\n' % \
         #    pprint.pformat(rpc_result)
 
         if rpc_result:
@@ -477,11 +482,12 @@ class Application(object):
         return json.dumps(error)
 
     def now_in_utc(self):
-        # Taken from http://stackoverflow.com/questions/3401428/how-to-get-an-isoformat-datetime-string-including-the-default-timezone @IgnorePep8
+        # noqa Taken from http://stackoverflow.com/questions/3401428/how-to-get-an-isoformat-datetime-string-including-the-default-timezone @IgnorePep8
         dtnow = datetime.datetime.now()
         dtutcnow = datetime.datetime.utcnow()
         delta = dtnow - dtutcnow
-        hh, mm = divmod((delta.days * 24*60*60 + delta.seconds + 30) // 60, 60)
+        hh, mm = divmod((delta.days * 24 * 60 * 60 + delta.seconds + 30) // 60,
+                        60)
         return "%s%+02d:%02d" % (dtnow.isoformat(), hh, mm)
 
 application = Application()
@@ -510,9 +516,7 @@ try:
         print "Monkeypatching std libraries for async"
         from gevent import monkey
         monkey.patch_all()
-    uwsgi.applications = {
-        '': application
-        }
+    uwsgi.applications = {'': application}
 except ImportError:
     # Not available outside of wsgi, ignore
     pass
