@@ -145,7 +145,9 @@ class GenomeSearchUtilTest(unittest.TestCase):
         ret = self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
                 "query": "", "sort_by": [["length", False]]})[0]
         self.assertEqual(ret["num_found"], 0)
+
         # And example of Genome object with reference to Assembly object
+        # TODO: replace this genome with one loaded fresh
         ref = "10882/13/1"
         ret = self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
                 "query": "", "sort_by": [["length", False]]})[0]
@@ -183,4 +185,4 @@ class GenomeSearchUtilTest(unittest.TestCase):
         genome_ref = str(info[6]) + '/' + str(info[0]) + '/' + str(info[4])
         ret = self.getImpl().search(self.getContext(), {"ref": genome_ref, "query": "",
                 "sort_by": [["feature_id", True]]})[0]
-        print("Custom search: " + str(ret))
+        self.assertEqual(ret["num_found"], 5017)
