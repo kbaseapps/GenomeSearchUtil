@@ -64,7 +64,13 @@ class GenomeSearchUtilIndexer:
         return str(value)
 
     def save_feature_tsv(self, genome, inner_chsum):
-        features = genome['features']
+        features = []
+        for feat_array in (('features', 'gene'), ('mrnas', 'mRNA'),
+                           ('cdss', 'CDS'), ('non_coding_features', 'gene')):
+            for feat in genome.get(feat_array[0], []):
+                if 'type' not in feat:
+                    feat['type'] = feat_array[1]
+                features.append(feat)
         outfile = tempfile.NamedTemporaryFile(dir = self.genome_index_dir,
                 prefix = inner_chsum + "_ftr_", suffix = ".tsv", delete=False)
         with outfile:
@@ -147,7 +153,8 @@ class GenomeSearchUtilIndexer:
                 print("    Loading WS object...")
             t1 = time.time()
             incl = [x+y for x,y in product(
-                ['features/[*]/'],
+                ['features/[*]/', 'cdss/[*]/', 'mrnas/[*]/',
+                 'non_codeing_features/[*]/'],
                 ["id", "type", "function", "functions", "aliases", "location",
                  "ontology_terms"])] + ['ontologies_present']
             genome = ws_client.get_objects2({"objects": [{"ref": ref,

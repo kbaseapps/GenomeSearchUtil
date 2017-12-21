@@ -167,6 +167,14 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                             )[0]
         self.assertTrue("num_found" in ret)
         self.assertEqual(ret["num_found"], 102)
+        ret = self.getImpl().search_contigs(self.getContext(),
+                                            {"ref": self.banno_ref,
+                                             "query": "kb|g.240002.c.45",
+                                             "sort_by": [["length", False]]}
+                                            )[0]
+        self.assertTrue("num_found" in ret)
+        self.assertEqual(ret["num_found"], 1)
+
 
     def test_custom_genome_ontologies(self):
         ret = self.getImpl().search(self.getContext(),
@@ -194,6 +202,13 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                             )[0]
         self.assertTrue("num_found" in ret)
         self.assertEqual(ret["num_found"], 304)
+        ret = self.getImpl().search_contigs(self.getContext(),
+                                            {"ref": self.banno_ref,
+                                             "query": "NODE_14_length_34118_cov_5.00684_ID_27",
+                                             "sort_by": [["length", False]]}
+                                            )[0]
+        self.assertTrue("num_found" in ret)
+        self.assertEqual(ret["num_found"], 1)
 
     def test_rhodobacter_genome_regions(self):
         ret = self.getImpl().search_region(self.getContext(),
@@ -212,13 +227,19 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                     {"ref": self.eco_ref,
                                      "query": "",
                                      "sort_by": [["feature_id", True]]})[0]
-        self.assertEqual(ret["num_found"], 4319)
+        self.assertEqual(ret["num_found"], 8638)
+        # type query
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.eco_ref,
+                                     "query": "gene",
+                                     "sort_by": [["feature_id", True]]})[0]
+        self.assertEqual(ret["num_found"], 4371)
         # alias query
         ret = self.getImpl().search(self.getContext(),
                                     {"ref": self.eco_ref,
                                      "query": "thrL",
                                      "sort_by": [["feature_id", True]]})[0]
-        self.assertEqual(ret["num_found"], 1)
+        self.assertEqual(ret["num_found"], 2)
         self.check_genome(self.eco_ref)
 
     def test_new_ecoli_genome_contigs(self):
@@ -239,13 +260,13 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                             "page_start": 1,
                                             "page_limit": 5})[0]
         self.assertEqual(len(ret["features"]), 5)
-        self.assertEqual(ret['features'][0]['feature_id'], 'b0002')
-        self.assertEqual(ret['num_found'], 10)
+        self.assertEqual(ret['features'][0]['feature_id'], 'b0001_CDS_1')
+        self.assertEqual(ret['num_found'], 20)
 
     def test_new_ecoli_genome_ontologies(self):
         ret = self.getImpl().search(self.getContext(),
                                     {"ref": self.eco_ref,
-                                     "query": "GO:0009088",
+                                     "query": "GO:0009088 gene",
                                      "limit": 1})[0]
         self.assertEqual(ret["num_found"], 8)
         self.assertEqual(len(ret["features"]), 1)
