@@ -138,7 +138,7 @@ class GenomeSearchUtilIndexer:
             genome = ws_client.get_objects2({"objects": [{"ref": ref, "included": [
                     "/features/[*]/id", "/features/[*]/type", "/features/[*]/function", 
                     "/features/[*]/aliases", "/features/[*]/location",
-                    "/features/[*]/ontology_terms/*/*/term_name"]}]})["data"][0]["data"]
+                    "/features/[*]/ontology_terms"]}]})["data"][0]["data"]
             self.save_feature_tsv(genome["features"], inner_chsum)
             if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
