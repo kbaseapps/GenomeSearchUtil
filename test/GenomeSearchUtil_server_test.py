@@ -203,8 +203,8 @@ class GenomeSearchUtilTest(unittest.TestCase):
         self.assertTrue("num_found" in ret)
         self.assertEqual(ret["num_found"], 304)
         ret = self.getImpl().search_contigs(self.getContext(),
-                                            {"ref": self.banno_ref,
-                                             "query": "NODE_14_length_34118_cov_5.00684_ID_27",
+                                            {"ref": self.rhodo_ref,
+                                             "query": "NODE_185_length_8164_cov_5.03663_ID_369",
                                              "sort_by": [["length", False]]}
                                             )[0]
         self.assertTrue("num_found" in ret)
@@ -270,6 +270,5 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                      "limit": 1})[0]
         self.assertEqual(ret["num_found"], 8)
         self.assertEqual(len(ret["features"]), 1)
-        print("MEH", ret["features"][0])
         self.assertTrue("threonine biosynthetic process" in ret["features"][0]
             ["ontology_terms"]["GO:0009088"])

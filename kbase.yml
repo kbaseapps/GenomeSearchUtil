@@ -8,10 +8,10 @@ service-language:
     python
 
 module-version:
-    0.0.3
+    0.0.4
 
 owners:
-    [rsutormin, msneddon]
+    [scannon, sychan, jjeffryes]
 
 service-config:
     dynamic-service: true
