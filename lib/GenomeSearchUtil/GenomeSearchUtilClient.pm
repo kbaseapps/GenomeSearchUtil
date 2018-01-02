@@ -81,12 +81,19 @@ sub new
     # We create an auth token, passing through the arguments that we were (hopefully) given.
 
     {
-	my $token = Bio::KBase::AuthToken->new(@args);
+	my %arg_hash2 = @args;
+	if (exists $arg_hash2{"token"}) {
+	    $self->{token} = $arg_hash2{"token"};
+	} elsif (exists $arg_hash2{"user_id"}) {
+	    my $token = Bio::KBase::AuthToken->new(@args);
+	    if (!$token->error_message) {
+	        $self->{token} = $token->token;
+	    }
+	}
 	
-	if (!$token->error_message)
+	if (exists $self->{token})
 	{
-	    $self->{token} = $token->token;
-	    $self->{client}->{token} = $token->token;
+	    $self->{client}->{token} = $self->{token};
 	}
     }
 
@@ -137,6 +144,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
+	feature_array has a value which is a string
 	feature_idx has a value which is an int
 	ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 Location is a reference to a hash where the following keys are defined:
@@ -176,6 +184,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
+	feature_array has a value which is a string
 	feature_idx has a value which is an int
 	ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 Location is a reference to a hash where the following keys are defined:
@@ -278,6 +287,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
+	feature_array has a value which is a string
 	feature_idx has a value which is an int
 	ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 Location is a reference to a hash where the following keys are defined:
@@ -316,6 +326,7 @@ FeatureData is a reference to a hash where the following keys are defined:
 	location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 	feature_type has a value which is a string
 	global_location has a value which is a GenomeSearchUtil.Location
+	feature_array has a value which is a string
 	feature_idx has a value which is an int
 	ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 Location is a reference to a hash where the following keys are defined:
@@ -753,8 +764,10 @@ aliases - mapping from alias name (key) to set of alias sources
     (value),
 global_location - this is location-related properties that are
     under sorting whereas items in "location" array are not,
-feature_idx - legacy field keeping the position of feature in
-    feature array in legacy Genome object,
+feature_array - field recording which array a feature is located in
+    (features, mrnas, cdss, ect.)
+feature_idx - field keeping the position of feature in
+    it's array in a Genome object,
 ontology_terms - mapping from term ID (key) to term name (value).
 
 
@@ -770,6 +783,7 @@ function has a value which is a string
 location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 feature_type has a value which is a string
 global_location has a value which is a GenomeSearchUtil.Location
+feature_array has a value which is a string
 feature_idx has a value which is an int
 ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 
@@ -786,6 +800,7 @@ function has a value which is a string
 location has a value which is a reference to a list where each element is a GenomeSearchUtil.Location
 feature_type has a value which is a string
 global_location has a value which is a GenomeSearchUtil.Location
+feature_array has a value which is a string
 feature_idx has a value which is an int
 ontology_terms has a value which is a reference to a hash where the key is a string and the value is a string
 

@@ -53,20 +53,22 @@ class GenomeSearchUtil(object):
            "FeatureData" (aliases - mapping from alias name (key) to set of
            alias sources (value), global_location - this is location-related
            properties that are under sorting whereas items in "location"
-           array are not, feature_idx - legacy field keeping the position of
-           feature in feature array in legacy Genome object, ontology_terms -
-           mapping from term ID (key) to term name (value).) -> structure:
-           parameter "feature_id" of String, parameter "aliases" of mapping
-           from String to list of String, parameter "function" of String,
-           parameter "location" of list of type "Location" -> structure:
-           parameter "contig_id" of String, parameter "start" of Long,
-           parameter "strand" of String, parameter "length" of Long,
-           parameter "feature_type" of String, parameter "global_location" of
+           array are not, feature_array - field recording which array a
+           feature is located in (features, mrnas, cdss, ect.) feature_idx -
+           field keeping the position of feature in it's array in a Genome
+           object, ontology_terms - mapping from term ID (key) to term name
+           (value).) -> structure: parameter "feature_id" of String,
+           parameter "aliases" of mapping from String to list of String,
+           parameter "function" of String, parameter "location" of list of
            type "Location" -> structure: parameter "contig_id" of String,
            parameter "start" of Long, parameter "strand" of String, parameter
-           "length" of Long, parameter "feature_idx" of Long, parameter
-           "ontology_terms" of mapping from String to String, parameter
-           "num_found" of Long
+           "length" of Long, parameter "feature_type" of String, parameter
+           "global_location" of type "Location" -> structure: parameter
+           "contig_id" of String, parameter "start" of Long, parameter
+           "strand" of String, parameter "length" of Long, parameter
+           "feature_array" of String, parameter "feature_idx" of Long,
+           parameter "ontology_terms" of mapping from String to String,
+           parameter "num_found" of Long
         """
         return self._client.call_method(
             'GenomeSearchUtil.search',
@@ -92,20 +94,22 @@ class GenomeSearchUtil(object):
            mapping from alias name (key) to set of alias sources (value),
            global_location - this is location-related properties that are
            under sorting whereas items in "location" array are not,
-           feature_idx - legacy field keeping the position of feature in
-           feature array in legacy Genome object, ontology_terms - mapping
-           from term ID (key) to term name (value).) -> structure: parameter
-           "feature_id" of String, parameter "aliases" of mapping from String
-           to list of String, parameter "function" of String, parameter
-           "location" of list of type "Location" -> structure: parameter
-           "contig_id" of String, parameter "start" of Long, parameter
-           "strand" of String, parameter "length" of Long, parameter
-           "feature_type" of String, parameter "global_location" of type
+           feature_array - field recording which array a feature is located
+           in (features, mrnas, cdss, ect.) feature_idx - field keeping the
+           position of feature in it's array in a Genome object,
+           ontology_terms - mapping from term ID (key) to term name (value).)
+           -> structure: parameter "feature_id" of String, parameter
+           "aliases" of mapping from String to list of String, parameter
+           "function" of String, parameter "location" of list of type
            "Location" -> structure: parameter "contig_id" of String,
            parameter "start" of Long, parameter "strand" of String, parameter
-           "length" of Long, parameter "feature_idx" of Long, parameter
-           "ontology_terms" of mapping from String to String, parameter
-           "num_found" of Long
+           "length" of Long, parameter "feature_type" of String, parameter
+           "global_location" of type "Location" -> structure: parameter
+           "contig_id" of String, parameter "start" of Long, parameter
+           "strand" of String, parameter "length" of Long, parameter
+           "feature_array" of String, parameter "feature_idx" of Long,
+           parameter "ontology_terms" of mapping from String to String,
+           parameter "num_found" of Long
         """
         return self._client.call_method(
             'GenomeSearchUtil.search_region',

@@ -183,6 +183,7 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                      "limit": 1})[0]
         self.assertEqual(ret["num_found"], 486)
         self.assertEqual(len(ret["features"]), 1)
+        self.assertEqual(ret['features'][0]['feature_array'], 'features')
         self.assertTrue("hypothetical protein" in ret["features"][0]
             ["ontology_terms"]["SSO:000009137"])
 
@@ -220,6 +221,7 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                             "page_limit": 5})[0]
         self.assertEqual(len(ret["features"]), 5)
         self.assertEqual(ret['features'][0]['feature_id'], 'kb|g.220339.CDS.2')
+        self.assertEqual(ret['features'][0]['feature_array'], 'features')
         self.assertEqual(ret['num_found'], 12)
 
     def test_new_ecoli_genome_features(self):
@@ -257,10 +259,11 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                             "query_contig_id": "NC_000913.3",
                                             "query_region_start": 0,
                                             "query_region_length": 10000,
-                                            "page_start": 1,
+                                            "page_start": 0,
                                             "page_limit": 5})[0]
         self.assertEqual(len(ret["features"]), 5)
         self.assertEqual(ret['features'][0]['feature_id'], 'b0001_CDS_1')
+        self.assertEqual(ret['features'][0]['feature_array'], 'cdss')
         self.assertEqual(ret['num_found'], 20)
 
     def test_new_ecoli_genome_ontologies(self):
@@ -270,5 +273,6 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                      "limit": 1})[0]
         self.assertEqual(ret["num_found"], 8)
         self.assertEqual(len(ret["features"]), 1)
+        self.assertEqual(ret['features'][0]['feature_array'], 'features')
         self.assertTrue("threonine biosynthetic process" in ret["features"][0]
             ["ontology_terms"]["GO:0009088"])

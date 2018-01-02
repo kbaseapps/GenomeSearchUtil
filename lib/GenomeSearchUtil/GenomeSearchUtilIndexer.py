@@ -67,16 +67,18 @@ class GenomeSearchUtilIndexer:
         features = []
         for feat_array in (('features', 'gene'), ('mrnas', 'mRNA'),
                            ('cdss', 'CDS'), ('non_coding_features', 'gene')):
-            for feat in genome.get(feat_array[0], []):
+            for i, feat in enumerate(genome.get(feat_array[0], [])):
                 if 'type' not in feat:
                     feat['type'] = feat_array[1]
+                feat['src_arr'] = feat_array[0]
+                feat['index'] = i
                 features.append(feat)
-        outfile = tempfile.NamedTemporaryFile(dir = self.genome_index_dir,
-                prefix = inner_chsum + "_ftr_", suffix = ".tsv", delete=False)
+        outfile = tempfile.NamedTemporaryFile(dir=self.genome_index_dir,
+                prefix=inner_chsum + "_ftr_", suffix=".tsv", delete=False)
         with outfile:
             pos = 0
             for feature in features:
-                obj = {"p": pos}
+                obj = {"p": feature['index'], 'arr': feature['src_arr']}
                 pos += 1
                 ft_id = self.to_text(feature, "id")
                 ft_type = self.to_text(feature, "type")
@@ -294,7 +296,8 @@ class GenomeSearchUtilIndexer:
             return {"location": location, "feature_id": items[1],
                     "feature_type": items[2], "global_location": gloc,
                     "aliases": aliases, "function": items[8], 
-                    "feature_idx": obj["p"], "ontology_terms": ontology_terms}
+                    "feature_idx": obj["p"], "feature_array": obj['arr'],
+                    "ontology_terms": ontology_terms}
         except:
             raise ValueError("Error parsing feature from: [" + line + "]\n" +
                              "Cause: " + traceback.format_exc())
