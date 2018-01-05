@@ -41,9 +41,9 @@ module GenomeSearchUtil {
         global_location - this is location-related properties that are
             under sorting whereas items in "location" array are not,
         feature_array - field recording which array a feature is located in
-            (features, mrnas, cdss, ect.)
-        feature_idx - field keeping the position of feature in
-            it's array in a Genome object,
+            (features, mrnas, cdss, non_coding_features)
+        feature_idx - field keeping the position of feature in its array in a
+            Genome object,
         ontology_terms - mapping from term ID (key) to term name (value).
     */
     typedef structure {

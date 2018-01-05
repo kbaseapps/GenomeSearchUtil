@@ -154,9 +154,9 @@ class GenomeSearchUtilIndexer:
             if self.debug:
                 print("    Loading WS object...")
             t1 = time.time()
-            incl = [x+y for x,y in product(
+            incl = [x+y for x, y in product(
                 ['features/[*]/', 'cdss/[*]/', 'mrnas/[*]/',
-                 'non_codeing_features/[*]/'],
+                 'non_coding_features/[*]/'],
                 ["id", "type", "function", "functions", "aliases", "location",
                  "ontology_terms"])] + ['ontologies_present']
             genome = ws_client.get_objects2({"objects": [{"ref": ref,

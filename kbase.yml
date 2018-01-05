@@ -11,7 +11,7 @@ module-version:
     0.0.4
 
 owners:
-    [scannon, sychan, jjeffryes]
+    [scanon, sychan, jjeffryes]
 
 service-config:
     dynamic-service: true

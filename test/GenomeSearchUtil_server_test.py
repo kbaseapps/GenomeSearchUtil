@@ -229,13 +229,13 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                     {"ref": self.eco_ref,
                                      "query": "",
                                      "sort_by": [["feature_id", True]]})[0]
-        self.assertEqual(ret["num_found"], 8638)
+        self.assertEqual(ret["num_found"], 9411)
         # type query
         ret = self.getImpl().search(self.getContext(),
                                     {"ref": self.eco_ref,
                                      "query": "gene",
                                      "sort_by": [["feature_id", True]]})[0]
-        self.assertEqual(ret["num_found"], 4371)
+        self.assertEqual(ret["num_found"], 4552)
         # alias query
         ret = self.getImpl().search(self.getContext(),
                                     {"ref": self.eco_ref,
@@ -264,7 +264,7 @@ class GenomeSearchUtilTest(unittest.TestCase):
         self.assertEqual(len(ret["features"]), 5)
         self.assertEqual(ret['features'][0]['feature_id'], 'b0001_CDS_1')
         self.assertEqual(ret['features'][0]['feature_array'], 'cdss')
-        self.assertEqual(ret['num_found'], 20)
+        self.assertEqual(ret['num_found'], 21)
 
     def test_new_ecoli_genome_ontologies(self):
         ret = self.getImpl().search(self.getContext(),
