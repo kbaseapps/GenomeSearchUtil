@@ -8,6 +8,7 @@ import string
 import tempfile
 from biokbase.workspace.client import Workspace as workspaceService
 from GenomeSearchUtil.CombinedLineIterator import CombinedLineIterator
+from itertools import product
 
 class GenomeSearchUtilIndexer:
 
@@ -57,17 +58,27 @@ class GenomeSearchUtilIndexer:
         if key not in mapping or mapping[key] is None:
             return ""
         value = mapping[key]
-        if type(value) is list:
-            return ",".join(str(x) for x in value if x)
+        if isinstance(value, list):
+            return ",".join(str(x[1]) if isinstance(x, list) else str(x)
+                            for x in value)
         return str(value)
 
-    def save_feature_tsv(self, features, inner_chsum):
-        outfile = tempfile.NamedTemporaryFile(dir = self.genome_index_dir,
-                prefix = inner_chsum + "_ftr_", suffix = ".tsv", delete=False)
+    def save_feature_tsv(self, genome, inner_chsum):
+        features = []
+        for feat_array in (('features', 'gene'), ('mrnas', 'mRNA'),
+                           ('cdss', 'CDS'), ('non_coding_features', 'gene')):
+            for i, feat in enumerate(genome.get(feat_array[0], [])):
+                if 'type' not in feat:
+                    feat['type'] = feat_array[1]
+                feat['src_arr'] = feat_array[0]
+                feat['index'] = i
+                features.append(feat)
+        outfile = tempfile.NamedTemporaryFile(dir=self.genome_index_dir,
+                prefix=inner_chsum + "_ftr_", suffix=".tsv", delete=False)
         with outfile:
             pos = 0
             for feature in features:
-                obj = {"p": pos}
+                obj = {"p": feature['index'], 'arr': feature['src_arr']}
                 pos += 1
                 ft_id = self.to_text(feature, "id")
                 ft_type = self.to_text(feature, "type")
@@ -107,12 +118,20 @@ class GenomeSearchUtilIndexer:
                 obj_json = json.dumps(obj)
                 ft_aliases = self.to_text(feature, "aliases")
                 ft_function = self.to_text(feature, "function").replace("\t", " ")
+                if 'functions' in feature:
+                    ft_function = self.to_text(feature, "functions"
+                                               ).replace("\t", " ")
                 ontology_terms = []
                 if "ontology_terms" in feature:
                     for ont_type in feature["ontology_terms"]:
                         ont_map = feature["ontology_terms"][ont_type]
                         for term_id in ont_map:
-                            term_name = ont_map[term_id].get("term_name", "")
+                            # new genome type
+                            if 'ontologies_present' in genome:
+                                term_name = genome['ontologies_present'].get(
+                                    ont_type, {}).get(term_id, "")
+                            else:
+                                term_name = ont_map[term_id].get("term_name", "")
                             ontology_terms.append(term_id.replace(",", self.unicode_comma))
                             ontology_terms.append(term_name.replace(",", self.unicode_comma))
                 ft_ontology = ",".join(x for x in ontology_terms if x)
@@ -135,11 +154,15 @@ class GenomeSearchUtilIndexer:
             if self.debug:
                 print("    Loading WS object...")
             t1 = time.time()
-            genome = ws_client.get_objects2({"objects": [{"ref": ref, "included": [
-                    "/features/[*]/id", "/features/[*]/type", "/features/[*]/function", 
-                    "/features/[*]/aliases", "/features/[*]/location",
-                    "/features/[*]/ontology_terms/*/*/term_name"]}]})["data"][0]["data"]
-            self.save_feature_tsv(genome["features"], inner_chsum)
+            incl = [x+y for x, y in product(
+                ['features/[*]/', 'cdss/[*]/', 'mrnas/[*]/',
+                 'non_coding_features/[*]/'],
+                ["id", "type", "function", "functions", "aliases", "location",
+                 "ontology_terms"])] + ['ontologies_present']
+            genome = ws_client.get_objects2({"objects": [{"ref": ref,
+                                                          "included": incl}]
+                                             })["data"][0]["data"]
+            self.save_feature_tsv(genome, inner_chsum)
             if self.debug:
                 print("    (time=" + str(time.time() - t1) + ")")
         return inner_chsum
@@ -273,7 +296,8 @@ class GenomeSearchUtilIndexer:
             return {"location": location, "feature_id": items[1],
                     "feature_type": items[2], "global_location": gloc,
                     "aliases": aliases, "function": items[8], 
-                    "feature_idx": obj["p"], "ontology_terms": ontology_terms}
+                    "feature_idx": obj["p"], "feature_array": obj['arr'],
+                    "ontology_terms": ontology_terms}
         except:
             raise ValueError("Error parsing feature from: [" + line + "]\n" +
                              "Cause: " + traceback.format_exc())

@@ -19,8 +19,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  *     (value),
  * global_location - this is location-related properties that are
  *     under sorting whereas items in "location" array are not,
- * feature_idx - legacy field keeping the position of feature in
- *     feature array in legacy Genome object,
+ * feature_array - field recording which array a feature is located in
+ *     (features, mrnas, cdss, ect.)
+ * feature_idx - field keeping the position of feature in
+ *     it's array in a Genome object,
  * ontology_terms - mapping from term ID (key) to term name (value).
  * </pre>
  * 
@@ -34,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "location",
     "feature_type",
     "global_location",
+    "feature_array",
     "feature_idx",
     "ontology_terms"
 })
@@ -56,6 +59,8 @@ public class FeatureData {
      */
     @JsonProperty("global_location")
     private us.kbase.genomesearchutil.Location globalLocation;
+    @JsonProperty("feature_array")
+    private java.lang.String featureArray;
     @JsonProperty("feature_idx")
     private Long featureIdx;
     @JsonProperty("ontology_terms")
@@ -162,6 +167,21 @@ public class FeatureData {
         return this;
     }
 
+    @JsonProperty("feature_array")
+    public java.lang.String getFeatureArray() {
+        return featureArray;
+    }
+
+    @JsonProperty("feature_array")
+    public void setFeatureArray(java.lang.String featureArray) {
+        this.featureArray = featureArray;
+    }
+
+    public FeatureData withFeatureArray(java.lang.String featureArray) {
+        this.featureArray = featureArray;
+        return this;
+    }
+
     @JsonProperty("feature_idx")
     public Long getFeatureIdx() {
         return featureIdx;
@@ -204,7 +224,7 @@ public class FeatureData {
 
     @Override
     public java.lang.String toString() {
-        return ((((((((((((((((((("FeatureData"+" [featureId=")+ featureId)+", aliases=")+ aliases)+", function=")+ function)+", location=")+ location)+", featureType=")+ featureType)+", globalLocation=")+ globalLocation)+", featureIdx=")+ featureIdx)+", ontologyTerms=")+ ontologyTerms)+", additionalProperties=")+ additionalProperties)+"]");
+        return ((((((((((((((((((((("FeatureData"+" [featureId=")+ featureId)+", aliases=")+ aliases)+", function=")+ function)+", location=")+ location)+", featureType=")+ featureType)+", globalLocation=")+ globalLocation)+", featureArray=")+ featureArray)+", featureIdx=")+ featureIdx)+", ontologyTerms=")+ ontologyTerms)+", additionalProperties=")+ additionalProperties)+"]");
     }
 
 }

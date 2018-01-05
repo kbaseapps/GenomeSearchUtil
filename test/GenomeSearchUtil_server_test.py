@@ -13,7 +13,10 @@ except:
     from configparser import ConfigParser  # py3
 
 from pprint import pprint
+import shutil
+import os
 
+from AssemblyUtil.AssemblyUtilClient import AssemblyUtil
 from biokbase.workspace.client import Workspace as workspaceService
 from GenomeSearchUtil.GenomeSearchUtilImpl import GenomeSearchUtil
 from GenomeSearchUtil.GenomeSearchUtilServer import MethodContext
@@ -48,9 +51,69 @@ class GenomeSearchUtilTest(unittest.TestCase):
                         'authenticated': 1})
         cls.cfg['genome-index-dir'] = cls.cfg['scratch']
         cls.cfg['debug'] = "1"
+        cls.scratch = cls.cfg['scratch']
         cls.wsURL = cls.cfg['workspace-url']
         cls.wsClient = workspaceService(cls.wsURL, token=token)
         cls.serviceImpl = GenomeSearchUtil(cls.cfg)
+        suffix = int(time.time() * 1000)
+        cls.wsName = "test_SaveGenomeTest_" + str(suffix)
+        cls.wsClient.create_workspace({'workspace': cls.wsName})
+        cls.banno_ref = cls.load_genome_direct(
+            'data/b.anno.2.genome.json', 'b.anno.2',
+            contigset_filename='data/b.anno.2.contigs.json')
+        cls.rhodo_ref = cls.load_genome_direct(
+            'data/rhodobacter.json', 'rhodobacter',
+            contigset_filename='data/rhodobacter_contigs.json')
+        cls.eco_ref = cls.load_genome_direct(
+            'data/new_ecoli_genome.json', 'ecoli',
+            'data/e_coli_assembly.fasta', gtype="NewTempGenomes.Genome")
+
+    @classmethod
+    def load_genome_direct(cls, filename, obj_name, assembly_filename=None,
+                           contigset_filename=None,
+                           gtype='KBaseGenomes.Genome'):
+        data = json.load(open(filename, 'r'))
+
+        if assembly_filename:
+            au = AssemblyUtil(os.environ['SDK_CALLBACK_URL'])
+            assembly_file_path = os.path.join(cls.scratch,
+                                              os.path.basename(
+                                                  assembly_filename))
+            shutil.copy(assembly_filename, assembly_file_path)
+            assembly_ref = au.save_assembly_from_fasta({
+                'workspace_name': cls.wsName,
+                'assembly_name': obj_name + '.assembly',
+                'file': {'path': assembly_file_path}
+            })
+            pprint('created test assembly: ' + assembly_ref)
+            data['assembly_ref'] = assembly_ref
+
+        if contigset_filename:
+            contig_data = json.load(open(contigset_filename))
+            info = cls.wsClient.save_objects({
+                'workspace': cls.wsName, 'objects': [
+                    {
+                        'type': "KBaseGenomes.ContigSet",
+                        'name': obj_name + ".contigs",
+                        'data': contig_data}
+                ]})[0]
+            contig_ref = str(info[6]) + '/' + str(info[0]) + '/' + str(info[4])
+            data['contigset_ref'] = contig_ref
+
+        # save to ws
+        save_info = {
+            'workspace': cls.wsName,
+            'objects': [{
+                'type': gtype,
+                'data': data,
+                'name': obj_name + '.genome'
+            }]
+        }
+        result = cls.wsClient.save_objects(save_info)
+        info = result[0]
+        ref = str(info[6]) + '/' + str(info[0]) + '/' + str(info[4])
+        print('created test genome: ' + ref + ' from file ' + filename)
+        return ref
 
     @classmethod
     def tearDownClass(cls):
@@ -62,26 +125,13 @@ class GenomeSearchUtilTest(unittest.TestCase):
         return self.__class__.wsClient
 
     def getWsName(self):
-        if hasattr(self.__class__, 'wsName'):
-            return self.__class__.wsName
-        suffix = int(time.time() * 1000)
-        wsName = "test_GenomeSearchUtil_" + str(suffix)
-        self.getWsClient().create_workspace({'workspace': wsName})
-        self.__class__.wsName = wsName
-        return wsName
+        return self.__class__.wsName
 
     def getImpl(self):
         return self.__class__.serviceImpl
 
     def getContext(self):
         return self.__class__.ctx
-
-    # NOTE: According to Python unittest naming rules test method names should start from 'test'.
-    def test_search(self):
-        public_ws = "KBasePublicGenomesV5"
-        genome_ids = ["kb|g.0", "kb|g.3899"] #, "kb|g.166832", "kb|g.166828", "kb|g.166814", "kb|g.166802", "kb|g.140106"]
-        for genome_id in genome_ids:
-            self.check_genome(public_ws + "/" + genome_id)
 
     def check_genome(self, ref):
         query = "dehydrogenase"
@@ -100,89 +150,129 @@ class GenomeSearchUtilTest(unittest.TestCase):
                 "sort_by": [["feature_type", False], ["contig_id", True], ["start", False]],
                 "num_found": ret["num_found"]})[0]
         print("Features found for query [" + query + "]: " + str(ret["num_found"]))
-        #for feature in ret["features"]:
-        #    print(json.dumps(feature))
 
-    def test_genome_with_no_feature_locations(self):
-        genome_ref = "KBaseExampleData/Transcriptome_Sbi_shoots_ABA_upregulated"
-        ret = self.getImpl().search(self.getContext(), {"ref": genome_ref, "query": "Sb01g000360.1.CDS",
-                "sort_by": [["feature_id", True]]})[0]
+    def test_custom_genome_features(self):
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.banno_ref,
+                                     "query": "",
+                                     "sort_by": [["feature_id", True]]})[0]
+        self.assertEqual(ret["num_found"], 5017)
+        self.check_genome(self.banno_ref)
+
+    def test_custom_genome_contigs(self):
+        ret = self.getImpl().search_contigs(self.getContext(),
+                                            {"ref": self.banno_ref,
+                                             "query": "",
+                                             "sort_by": [["length", False]]}
+                                            )[0]
         self.assertTrue("num_found" in ret)
-        self.assertEqual(ret["num_found"],1)
-        # And search region
-        ret = self.getImpl().search_region(self.getContext(), {"ref": genome_ref,
-                "query_contig_id": "", "query_region_start": 100,
-                "query_region_length": 10000, "page_limit": 5,
-                "num_found": ret["num_found"]})[0]
+        self.assertEqual(ret["num_found"], 102)
+        ret = self.getImpl().search_contigs(self.getContext(),
+                                            {"ref": self.banno_ref,
+                                             "query": "kb|g.240002.c.45",
+                                             "sort_by": [["length", False]]}
+                                            )[0]
         self.assertTrue("num_found" in ret)
-        self.assertEqual(ret["num_found"],0)
-        self.assertIsNone(ret["contig_length"])
-
-    def test_search_region(self):
-        ref = "KBasePublicGenomesV5/kb|g.0"
-        ret = self.getImpl().search_region(self.getContext(), {"ref": ref,
-                "query_contig_id": "kb|g.0.c.1", "query_region_start": 1000000,
-                "query_region_length": 10000, "page_limit": 5})[0]
-        print("Features found in region: " + str(ret["num_found"]))
-        print("Contig length: " + str(ret["contig_length"]))
-        ret = self.getImpl().search_region(self.getContext(), {"ref": ref,
-                "query_contig_id": "kb|g.0.c.1", "query_region_start": 1000000,
-                "query_region_length": 10000, "page_limit": 5, 
-                "num_found": ret["num_found"]})[0]
-        self.assertEqual(10, ret["num_found"])
-        self.assertEqual(4639221, ret["contig_length"])
-
-    def test_search_configs(self):
-        ref = "KBasePublicGenomesV5/kb|g.23390"
-        ret = self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
-                "query": "", "sort_by": [["length", False]]})[0]
-        self.assertTrue("num_found" in ret)
-        self.assertEqual(ret["num_found"], 25680)
-        self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
-                "query": "", "sort_by": [["length", False]],
-                "num_found": ret["num_found"]})[0]
-        ref = "KBaseExampleData/Transcriptome_Sbi_shoots_ABA_upregulated"
-        ret = self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
-                "query": "", "sort_by": [["length", False]]})[0]
-        self.assertEqual(ret["num_found"], 0)
-
-        # And example of Genome object with reference to Assembly object
-        # TODO: replace this genome with one loaded fresh
-        ref = "10882/13/1"
-        ret = self.getImpl().search_contigs(self.getContext(), {"ref": ref, 
-                "query": "", "sort_by": [["length", False]]})[0]
         self.assertEqual(ret["num_found"], 1)
 
-#     def test_ontology(self):
-#         genome_ref = "Phytozome_Genomes/3702_Phytozome_TAIR10"
-#         ret = self.getImpl().search(self.getContext(), {"ref": genome_ref,
-#                 "query": "GO:0006355 regulation of transcription DNA-templated",
-#                 "limit": 1})[0]
-#         self.assertTrue(ret["num_found"] > 0)
-#         self.assertTrue(len(ret["features"]) > 0)
-#         self.assertTrue("," in ret["features"][0]["ontology_terms"]["GO:0006355"])
 
-    def test_custom_genome(self):
-        contig_data = None
-        genome_data = None
-        with open("/kb/module/test/data/b.anno.2.contigs.json", 'r') as f:
-            contig_data = json.load(f)
-        with open("/kb/module/test/data/b.anno.2.genome.json", 'r') as f:
-            genome_data = json.load(f)
-        ws_name = self.getWsName()
-        info = self.getWsClient().save_objects({'workspace': ws_name, 
-                                                'objects': [{'type': "KBaseGenomes.ContigSet",
-                                                             'name': "b.anno.2.contigs",
-                                                             'data': contig_data}
-                                                            ]})[0]
-        contig_ref = str(info[6]) + '/' + str(info[0]) + '/' + str(info[4])
-        genome_data['contigset_ref'] = contig_ref
-        info = self.getWsClient().save_objects({'workspace': ws_name, 
-                                                'objects': [{'type': "KBaseGenomes.Genome",
-                                                             'name': "b.anno.2.genome",
-                                                             'data': genome_data}
-                                                            ]})[0]
-        genome_ref = str(info[6]) + '/' + str(info[0]) + '/' + str(info[4])
-        ret = self.getImpl().search(self.getContext(), {"ref": genome_ref, "query": "",
-                "sort_by": [["feature_id", True]]})[0]
-        self.assertEqual(ret["num_found"], 5017)
+    def test_custom_genome_ontologies(self):
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.banno_ref,
+                                     "query": "SSO:000009137",
+                                     "limit": 1})[0]
+        self.assertEqual(ret["num_found"], 486)
+        self.assertEqual(len(ret["features"]), 1)
+        self.assertEqual(ret['features'][0]['feature_array'], 'features')
+        self.assertTrue("hypothetical protein" in ret["features"][0]
+            ["ontology_terms"]["SSO:000009137"])
+
+    def test_rhodobacter_genome_features(self):
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.rhodo_ref,
+                                     "query": "",
+                                     "sort_by": [["feature_id", True]]})[0]
+        self.assertEqual(ret["num_found"], 4158)
+        self.check_genome(self.rhodo_ref)
+
+    def test_rhodobacter_genome_contigs(self):
+        ret = self.getImpl().search_contigs(self.getContext(),
+                                            {"ref": self.rhodo_ref,
+                                             "query": "",
+                                             "sort_by": [["length", False]]}
+                                            )[0]
+        self.assertTrue("num_found" in ret)
+        self.assertEqual(ret["num_found"], 304)
+        ret = self.getImpl().search_contigs(self.getContext(),
+                                            {"ref": self.rhodo_ref,
+                                             "query": "NODE_185_length_8164_cov_5.03663_ID_369",
+                                             "sort_by": [["length", False]]}
+                                            )[0]
+        self.assertTrue("num_found" in ret)
+        self.assertEqual(ret["num_found"], 1)
+
+    def test_rhodobacter_genome_regions(self):
+        ret = self.getImpl().search_region(self.getContext(),
+                                           {"ref": self.rhodo_ref,
+                                            "query_contig_id": "NODE_48_length_21448_cov_4.91263_ID_95",
+                                            "query_region_start": 0,
+                                            "query_region_length": 10000,
+                                            "page_start": 1,
+                                            "page_limit": 5})[0]
+        self.assertEqual(len(ret["features"]), 5)
+        self.assertEqual(ret['features'][0]['feature_id'], 'kb|g.220339.CDS.2')
+        self.assertEqual(ret['features'][0]['feature_array'], 'features')
+        self.assertEqual(ret['num_found'], 12)
+
+    def test_new_ecoli_genome_features(self):
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.eco_ref,
+                                     "query": "",
+                                     "sort_by": [["feature_id", True]]})[0]
+        self.assertEqual(ret["num_found"], 9411)
+        # type query
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.eco_ref,
+                                     "query": "gene",
+                                     "sort_by": [["feature_id", True]]})[0]
+        self.assertEqual(ret["num_found"], 4552)
+        # alias query
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.eco_ref,
+                                     "query": "thrL",
+                                     "sort_by": [["feature_id", True]]})[0]
+        self.assertEqual(ret["num_found"], 2)
+        self.check_genome(self.eco_ref)
+
+    def test_new_ecoli_genome_contigs(self):
+        ret = self.getImpl().search_contigs(self.getContext(),
+                                            {"ref": self.eco_ref,
+                                             "query": "",
+                                             "sort_by": [["length", False]]}
+                                            )[0]
+        self.assertTrue("num_found" in ret)
+        self.assertEqual(ret["num_found"], 1)
+
+    def test_new_ecoli_genome_regions(self):
+        ret = self.getImpl().search_region(self.getContext(),
+                                           {"ref": self.eco_ref,
+                                            "query_contig_id": "NC_000913.3",
+                                            "query_region_start": 0,
+                                            "query_region_length": 10000,
+                                            "page_start": 0,
+                                            "page_limit": 5})[0]
+        self.assertEqual(len(ret["features"]), 5)
+        self.assertEqual(ret['features'][0]['feature_id'], 'b0001_CDS_1')
+        self.assertEqual(ret['features'][0]['feature_array'], 'cdss')
+        self.assertEqual(ret['num_found'], 21)
+
+    def test_new_ecoli_genome_ontologies(self):
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.eco_ref,
+                                     "query": "GO:0009088 gene",
+                                     "limit": 1})[0]
+        self.assertEqual(ret["num_found"], 8)
+        self.assertEqual(len(ret["features"]), 1)
+        self.assertEqual(ret['features'][0]['feature_array'], 'features')
+        self.assertTrue("threonine biosynthetic process" in ret["features"][0]
+            ["ontology_terms"]["GO:0009088"])

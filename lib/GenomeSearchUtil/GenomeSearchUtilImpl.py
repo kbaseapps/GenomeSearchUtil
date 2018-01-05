@@ -19,9 +19,9 @@ class GenomeSearchUtil:
     # state. A method could easily clobber the state set by another while
     # the latter method is running.
     ######################################### noqa
-    VERSION = "0.0.2"
-    GIT_URL = "https://github.com/kbaseapps/GenomeSearchUtil"
-    GIT_COMMIT_HASH = "fd1eabe25704419a4a3a0d538c43a8d173b220b6"
+    VERSION = "0.0.4"
+    GIT_URL = "git@github.com:kbaseapps/GenomeSearchUtil.git"
+    GIT_COMMIT_HASH = "e1007bea917bd3490fe1d825e088aeefc499707a"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -55,20 +55,22 @@ class GenomeSearchUtil:
            "FeatureData" (aliases - mapping from alias name (key) to set of
            alias sources (value), global_location - this is location-related
            properties that are under sorting whereas items in "location"
-           array are not, feature_idx - legacy field keeping the position of
-           feature in feature array in legacy Genome object, ontology_terms -
-           mapping from term ID (key) to term name (value).) -> structure:
-           parameter "feature_id" of String, parameter "aliases" of mapping
-           from String to list of String, parameter "function" of String,
-           parameter "location" of list of type "Location" -> structure:
-           parameter "contig_id" of String, parameter "start" of Long,
-           parameter "strand" of String, parameter "length" of Long,
-           parameter "feature_type" of String, parameter "global_location" of
+           array are not, feature_array - field recording which array a
+           feature is located in (features, mrnas, cdss, ect.) feature_idx -
+           field keeping the position of feature in it's array in a Genome
+           object, ontology_terms - mapping from term ID (key) to term name
+           (value).) -> structure: parameter "feature_id" of String,
+           parameter "aliases" of mapping from String to list of String,
+           parameter "function" of String, parameter "location" of list of
            type "Location" -> structure: parameter "contig_id" of String,
            parameter "start" of Long, parameter "strand" of String, parameter
-           "length" of Long, parameter "feature_idx" of Long, parameter
-           "ontology_terms" of mapping from String to String, parameter
-           "num_found" of Long
+           "length" of Long, parameter "feature_type" of String, parameter
+           "global_location" of type "Location" -> structure: parameter
+           "contig_id" of String, parameter "start" of Long, parameter
+           "strand" of String, parameter "length" of Long, parameter
+           "feature_array" of String, parameter "feature_idx" of Long,
+           parameter "ontology_terms" of mapping from String to String,
+           parameter "num_found" of Long
         """
         # ctx is the context object
         # return variables are: result
@@ -109,20 +111,22 @@ class GenomeSearchUtil:
            mapping from alias name (key) to set of alias sources (value),
            global_location - this is location-related properties that are
            under sorting whereas items in "location" array are not,
-           feature_idx - legacy field keeping the position of feature in
-           feature array in legacy Genome object, ontology_terms - mapping
-           from term ID (key) to term name (value).) -> structure: parameter
-           "feature_id" of String, parameter "aliases" of mapping from String
-           to list of String, parameter "function" of String, parameter
-           "location" of list of type "Location" -> structure: parameter
-           "contig_id" of String, parameter "start" of Long, parameter
-           "strand" of String, parameter "length" of Long, parameter
-           "feature_type" of String, parameter "global_location" of type
+           feature_array - field recording which array a feature is located
+           in (features, mrnas, cdss, ect.) feature_idx - field keeping the
+           position of feature in it's array in a Genome object,
+           ontology_terms - mapping from term ID (key) to term name (value).)
+           -> structure: parameter "feature_id" of String, parameter
+           "aliases" of mapping from String to list of String, parameter
+           "function" of String, parameter "location" of list of type
            "Location" -> structure: parameter "contig_id" of String,
            parameter "start" of Long, parameter "strand" of String, parameter
-           "length" of Long, parameter "feature_idx" of Long, parameter
-           "ontology_terms" of mapping from String to String, parameter
-           "num_found" of Long
+           "length" of Long, parameter "feature_type" of String, parameter
+           "global_location" of type "Location" -> structure: parameter
+           "contig_id" of String, parameter "start" of Long, parameter
+           "strand" of String, parameter "length" of Long, parameter
+           "feature_array" of String, parameter "feature_idx" of Long,
+           parameter "ontology_terms" of mapping from String to String,
+           parameter "num_found" of Long
         """
         # ctx is the context object
         # return variables are: result
