@@ -21,7 +21,7 @@ class GenomeSearchUtil:
     ######################################### noqa
     VERSION = "0.0.4"
     GIT_URL = "git@github.com:kbaseapps/GenomeSearchUtil.git"
-    GIT_COMMIT_HASH = "e1007bea917bd3490fe1d825e088aeefc499707a"
+    GIT_COMMIT_HASH = "6b63bf10b38d9582b68ac70b7c502d2486f0f417"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -37,13 +37,16 @@ class GenomeSearchUtil:
 
     def search(self, ctx, params):
         """
-        :param params: instance of type "SearchOptions" (num_found - optional
+        :param params: instance of type "SearchOptions" (structured_query -
+           Optional query in object form that uses MongoDB style key-value
+           matching and $and, $not, and $or keywords. num_found - optional
            field which when set informs that there is no need to perform full
            scan in order to count this value because it was already done
            before; please don't set this value with 0 or any guessed number
            if you didn't get right value previously.) -> structure: parameter
-           "ref" of String, parameter "query" of String, parameter "sort_by"
-           of list of type "column_sorting" -> tuple of size 2: parameter
+           "ref" of String, parameter "query" of String, parameter
+           "structured_query" of unspecified object, parameter "sort_by" of
+           list of type "column_sorting" -> tuple of size 2: parameter
            "column" of String, parameter "ascending" of type "boolean"
            (Indicates true or false values, false = 0, true = 1 @range
            [0,1]), parameter "start" of Long, parameter "limit" of Long,
@@ -56,20 +59,20 @@ class GenomeSearchUtil:
            alias sources (value), global_location - this is location-related
            properties that are under sorting whereas items in "location"
            array are not, feature_array - field recording which array a
-           feature is located in (features, mrnas, cdss, ect.) feature_idx -
-           field keeping the position of feature in it's array in a Genome
-           object, ontology_terms - mapping from term ID (key) to term name
-           (value).) -> structure: parameter "feature_id" of String,
-           parameter "aliases" of mapping from String to list of String,
-           parameter "function" of String, parameter "location" of list of
-           type "Location" -> structure: parameter "contig_id" of String,
-           parameter "start" of Long, parameter "strand" of String, parameter
-           "length" of Long, parameter "feature_type" of String, parameter
-           "global_location" of type "Location" -> structure: parameter
-           "contig_id" of String, parameter "start" of Long, parameter
-           "strand" of String, parameter "length" of Long, parameter
-           "feature_array" of String, parameter "feature_idx" of Long,
-           parameter "ontology_terms" of mapping from String to String,
+           feature is located in (features, mrnas, cdss, non_coding_features)
+           feature_idx - field keeping the position of feature in its array
+           in a Genome object, ontology_terms - mapping from term ID (key) to
+           term name (value).) -> structure: parameter "feature_id" of
+           String, parameter "aliases" of mapping from String to list of
+           String, parameter "function" of String, parameter "location" of
+           list of type "Location" -> structure: parameter "contig_id" of
+           String, parameter "start" of Long, parameter "strand" of String,
+           parameter "length" of Long, parameter "feature_type" of String,
+           parameter "global_location" of type "Location" -> structure:
+           parameter "contig_id" of String, parameter "start" of Long,
+           parameter "strand" of String, parameter "length" of Long,
+           parameter "feature_array" of String, parameter "feature_idx" of
+           Long, parameter "ontology_terms" of mapping from String to String,
            parameter "num_found" of Long
         """
         # ctx is the context object
@@ -77,7 +80,8 @@ class GenomeSearchUtil:
         #BEGIN search
         result = self.indexer.search(ctx["token"], 
                                      params.get("ref", None), 
-                                     params.get("query", None), 
+                                     params.get("query", None),
+                                     params.get("structured_query", None),
                                      params.get("sort_by", None),
                                      params.get("start", None), 
                                      params.get("limit", None),
@@ -112,13 +116,13 @@ class GenomeSearchUtil:
            global_location - this is location-related properties that are
            under sorting whereas items in "location" array are not,
            feature_array - field recording which array a feature is located
-           in (features, mrnas, cdss, ect.) feature_idx - field keeping the
-           position of feature in it's array in a Genome object,
-           ontology_terms - mapping from term ID (key) to term name (value).)
-           -> structure: parameter "feature_id" of String, parameter
-           "aliases" of mapping from String to list of String, parameter
-           "function" of String, parameter "location" of list of type
-           "Location" -> structure: parameter "contig_id" of String,
+           in (features, mrnas, cdss, non_coding_features) feature_idx -
+           field keeping the position of feature in its array in a Genome
+           object, ontology_terms - mapping from term ID (key) to term name
+           (value).) -> structure: parameter "feature_id" of String,
+           parameter "aliases" of mapping from String to list of String,
+           parameter "function" of String, parameter "location" of list of
+           type "Location" -> structure: parameter "contig_id" of String,
            parameter "start" of Long, parameter "strand" of String, parameter
            "length" of Long, parameter "feature_type" of String, parameter
            "global_location" of type "Location" -> structure: parameter
