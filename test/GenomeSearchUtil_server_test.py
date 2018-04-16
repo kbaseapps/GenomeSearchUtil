@@ -297,3 +297,11 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                                                   {"feature_id": "b0002"}]},
                                      "limit": 1})[0]
         self.assertEqual(ret["num_found"], 2)
+
+        id_queries2 = ["b{0:04d}".format(x) for x in range(1, 1000)]
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.eco_ref,
+                                     "structured_query": {"feature_id": id_queries2},
+                                     "limit": 1000})[0]
+        self.assertEqual(ret["num_found"], 963)
+

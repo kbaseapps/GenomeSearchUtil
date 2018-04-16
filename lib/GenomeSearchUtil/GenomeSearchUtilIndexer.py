@@ -13,18 +13,27 @@ from itertools import product
 
 def _eval_structured_query(split_line, structured_query, prop_dict):
     if not isinstance(structured_query, dict):
-        raise ValueError('structured_query should be a dictionary object')
+        raise ValueError('structured_query should be a dictionary object: {}'.format(
+            structured_query))
     conditions = []
     for key, val in structured_query.items():
         if key == "$not":
             conditions.append(not _eval_structured_query(split_line, val, prop_dict))
         elif key == "$or":
+            if not isinstance(val, list):
+                raise ValueError("Value of $or should be a list: {}". format(val))
             conditions.append(any(_eval_structured_query(split_line, x, prop_dict) for x in val))
         elif key == "$and":
+            if not isinstance(val, list):
+                raise ValueError("Value of $and should be a list: {}".format(val))
             conditions.append(all(_eval_structured_query(split_line, x, prop_dict) for x in val))
         elif key in prop_dict:
-            # have to adjust to account for the clipped line
-            conditions.append(split_line[prop_dict[key]['col']-2] == val)
+            # if val is a list, treat the values as OR
+            if isinstance(val, list) or isinstance(val, set):
+                conditions.append(split_line[prop_dict[key]['col']-2] in val)
+            else:
+                # have to adjust to account for the clipped line
+                conditions.append(split_line[prop_dict[key]['col']-2] == val)
         else:
             raise ValueError("Unrecognised field in query {}. Should be one of {} or $and, $or "
                              "or $not".format(key, ", ".join(prop_dict.keys())))

@@ -25,6 +25,12 @@ class StructuredQueryTest(unittest.TestCase):
         with self.assertRaisesRegexp(ValueError, "should be a dictionary"):
             _eval_structured_query(self.sline1, "meh", self.props_map)
 
+        with self.assertRaisesRegexp(ValueError, "should be a list"):
+            _eval_structured_query(self.sline1, {'$and': "meh"}, self.props_map)
+
+        with self.assertRaisesRegexp(ValueError, "should be a list"):
+            _eval_structured_query(self.sline1, {'$or': "meh"}, self.props_map)
+
     def test_field_query(self):
         self.assertTrue(_eval_structured_query(self.sline1, {"feature_id": "b0001_CDS_1"},
                                                self.props_map))
@@ -59,6 +65,8 @@ class StructuredQueryTest(unittest.TestCase):
         self.assertFalse(_eval_structured_query(self.sline1, {"$or": [{"feature_id": "meh"},
                                                                       {"feature_type": "gene"}]},
                                                 self.props_map))
+        self.assertTrue(_eval_structured_query(self.sline1, {"feature_id": ["b0001_CDS_1", "b0001"]},
+                                               self.props_map))
 
     def test_and_query(self):
         self.assertTrue(_eval_structured_query(self.sline1, {"$and": [{"feature_type": "CDS"},
