@@ -11,11 +11,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import us.kbase.common.service.Tuple2;
+import us.kbase.common.service.UObject;
 
 
 /**
  * <p>Original spec-file type: SearchOptions</p>
  * <pre>
+ * structured_query - Optional query in object form that uses MongoDB style key-value
+ *     matching and $and, $not, and $or keywords.
  * num_found - optional field which when set informs that there
  *     is no need to perform full scan in order to count this
  *     value because it was already done before; please don't
@@ -29,6 +32,7 @@ import us.kbase.common.service.Tuple2;
 @JsonPropertyOrder({
     "ref",
     "query",
+    "structured_query",
     "sort_by",
     "start",
     "limit",
@@ -40,6 +44,8 @@ public class SearchOptions {
     private java.lang.String ref;
     @JsonProperty("query")
     private java.lang.String query;
+    @JsonProperty("structured_query")
+    private UObject structuredQuery;
     @JsonProperty("sort_by")
     private List<Tuple2 <String, Long>> sortBy;
     @JsonProperty("start")
@@ -77,6 +83,21 @@ public class SearchOptions {
 
     public SearchOptions withQuery(java.lang.String query) {
         this.query = query;
+        return this;
+    }
+
+    @JsonProperty("structured_query")
+    public UObject getStructuredQuery() {
+        return structuredQuery;
+    }
+
+    @JsonProperty("structured_query")
+    public void setStructuredQuery(UObject structuredQuery) {
+        this.structuredQuery = structuredQuery;
+    }
+
+    public SearchOptions withStructuredQuery(UObject structuredQuery) {
+        this.structuredQuery = structuredQuery;
         return this;
     }
 
@@ -152,7 +173,7 @@ public class SearchOptions {
 
     @Override
     public java.lang.String toString() {
-        return ((((((((((((((("SearchOptions"+" [ref=")+ ref)+", query=")+ query)+", sortBy=")+ sortBy)+", start=")+ start)+", limit=")+ limit)+", numFound=")+ numFound)+", additionalProperties=")+ additionalProperties)+"]");
+        return ((((((((((((((((("SearchOptions"+" [ref=")+ ref)+", query=")+ query)+", structuredQuery=")+ structuredQuery)+", sortBy=")+ sortBy)+", start=")+ start)+", limit=")+ limit)+", numFound=")+ numFound)+", additionalProperties=")+ additionalProperties)+"]");
     }
 
 }

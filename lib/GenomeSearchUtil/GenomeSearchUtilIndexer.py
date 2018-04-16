@@ -10,16 +10,46 @@ from biokbase.workspace.client import Workspace as workspaceService
 from GenomeSearchUtil.CombinedLineIterator import CombinedLineIterator
 from itertools import product
 
+
+def _eval_structured_query(split_line, structured_query, prop_dict):
+    if not isinstance(structured_query, dict):
+        raise ValueError('structured_query should be a dictionary object: {}'.format(
+            structured_query))
+    conditions = []
+    for key, val in structured_query.items():
+        if key == "$not":
+            conditions.append(not _eval_structured_query(split_line, val, prop_dict))
+        elif key == "$or":
+            if not isinstance(val, list):
+                raise ValueError("Value of $or should be a list: {}". format(val))
+            conditions.append(any(_eval_structured_query(split_line, x, prop_dict) for x in val))
+        elif key == "$and":
+            if not isinstance(val, list):
+                raise ValueError("Value of $and should be a list: {}".format(val))
+            conditions.append(all(_eval_structured_query(split_line, x, prop_dict) for x in val))
+        elif key in prop_dict:
+            # if val is a list, treat the values as OR
+            if isinstance(val, list) or isinstance(val, set):
+                conditions.append(split_line[prop_dict[key]['col']-2] in val)
+            else:
+                # have to adjust to account for the clipped line
+                conditions.append(split_line[prop_dict[key]['col']-2] == val)
+        else:
+            raise ValueError("Unrecognised field in query {}. Should be one of {} or $and, $or "
+                             "or $not".format(key, ", ".join(prop_dict.keys())))
+    return all(conditions)
+
+
 class GenomeSearchUtilIndexer:
 
     def __init__(self, config):
         self.feature_column_props_map = {
-            "feature_id": {"col": 2, "type": ""}, 
-            "feature_type": {"col": 3, "type": ""}, 
-            "contig_id": {"col": 4, "type": ""}, 
-            "start": {"col": 5, "type": "n"}, 
-            "strand": {"col": 6, "type": ""}, 
-            "length": {"col": 7, "type": "n"}, 
+            "feature_id": {"col": 2, "type": ""},
+            "feature_type": {"col": 3, "type": ""},
+            "contig_id": {"col": 4, "type": ""},
+            "start": {"col": 5, "type": "n"},
+            "strand": {"col": 6, "type": ""},
+            "length": {"col": 7, "type": "n"},
             "function": {"col": 9, "type": ""}
         }
         self.contig_column_props_map = {
@@ -35,7 +65,7 @@ class GenomeSearchUtilIndexer:
         self.max_sort_mem_size = 250000
         self.unicode_comma = u"\uFF0C"
     
-    def search(self, token, ref, query, sort_by, start, limit, num_found):
+    def search(self, token, ref, query, structured_query, sort_by, start, limit, num_found):
         if query is None:
             query = ""
         if start is None:
@@ -43,13 +73,14 @@ class GenomeSearchUtilIndexer:
         if limit is None:
             limit = 50
         if self.debug:
-            print("Search: genome=" + ref + ", query=[" + query + "], sort-by=[" +
-                  self.get_sorting_code(self.feature_column_props_map, sort_by) +
-                  "], start=" + str(start) + ", limit=" + str(limit))
+            print("Search: genome={}, query=[{}], structured_query=[{}] sort-by=[{}], start={}, "
+                  "limit={}".format(ref, query, structured_query, self.get_sorting_code(
+                        self.feature_column_props_map, sort_by), start, limit))
         t1 = time.time()
         inner_chsum = self.check_feature_cache(ref, token)
         index_iter = self.get_feature_sorted_iterator(inner_chsum, sort_by)
-        ret = self.filter_feature_query(index_iter, query, start, limit, num_found)
+        ret = self.filter_feature_query(index_iter, query, structured_query, start, limit,
+                                        num_found)
         if self.debug:
             print("    (overall-time=" + str(time.time() - t1) + ")")
         return ret
@@ -234,7 +265,7 @@ class GenomeSearchUtilIndexer:
                     print("    (time=" + str(time.time() - t1) + ")")
         return CombinedLineIterator(final_output_file)
 
-    def filter_feature_query(self, index_iter, query, start, limit, num_found):
+    def filter_feature_query(self, index_iter, query, structured_query, start, limit, num_found):
         query_words = str(query).lower().translate(
                 string.maketrans("\r\n\t,", "    ")).split()
         if self.debug:
@@ -245,8 +276,8 @@ class GenomeSearchUtilIndexer:
         with index_iter:
             for line in index_iter:
                 line2 = line[line.index('\t') + 1:]
-                if all(word in line2.lower() for word in query_words):
-                    if fcount >= start and fcount < start + limit:
+                if self._eval_line(line2, query_words, structured_query):
+                    if start <= fcount < start + limit:
                         features.append(self.unpack_feature(line.rstrip('\n')))
                     fcount += 1
                     if num_found is not None and fcount >= start + limit:
@@ -257,6 +288,14 @@ class GenomeSearchUtilIndexer:
                 print("    (time=" + str(time.time() - t1) + ")")
         return {"num_found": fcount, "start": start, "features": features,
                 "query": query}
+
+    def _eval_line(self, line, all_query, structured_query=None):
+        if not all(word in line.lower() for word in all_query):
+            return False
+        if structured_query:
+            return _eval_structured_query(line.split('\t'), structured_query,
+                                          self.feature_column_props_map)
+        return True
 
     def unpack_feature(self, line, items = None):
         try:

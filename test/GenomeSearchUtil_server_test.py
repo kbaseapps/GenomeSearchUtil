@@ -18,6 +18,7 @@ import os
 
 from AssemblyUtil.AssemblyUtilClient import AssemblyUtil
 from biokbase.workspace.client import Workspace as workspaceService
+from GenomeAnnotationAPI.GenomeAnnotationAPIClient import GenomeAnnotationAPI
 from GenomeSearchUtil.GenomeSearchUtilImpl import GenomeSearchUtil
 from GenomeSearchUtil.GenomeSearchUtilServer import MethodContext
 from GenomeSearchUtil.authclient import KBaseAuth as _KBaseAuth
@@ -58,6 +59,7 @@ class GenomeSearchUtilTest(unittest.TestCase):
         suffix = int(time.time() * 1000)
         cls.wsName = "test_SaveGenomeTest_" + str(suffix)
         cls.wsClient.create_workspace({'workspace': cls.wsName})
+        cls.ga_client = GenomeAnnotationAPI(os.environ['SDK_CALLBACK_URL'])
         cls.banno_ref = cls.load_genome_direct(
             'data/b.anno.2.genome.json', 'b.anno.2',
             contigset_filename='data/b.anno.2.contigs.json')
@@ -66,12 +68,12 @@ class GenomeSearchUtilTest(unittest.TestCase):
             contigset_filename='data/rhodobacter_contigs.json')
         cls.eco_ref = cls.load_genome_direct(
             'data/new_ecoli_genome.json', 'ecoli',
-            'data/e_coli_assembly.fasta', gtype="NewTempGenomes.Genome")
+            'data/e_coli_assembly.fasta', gtype="KBaseGenomes.Genome")
 
     @classmethod
     def load_genome_direct(cls, filename, obj_name, assembly_filename=None,
                            contigset_filename=None,
-                           gtype='KBaseGenomes.Genome'):
+                           gtype=False):
         data = json.load(open(filename, 'r'))
 
         if assembly_filename:
@@ -100,17 +102,24 @@ class GenomeSearchUtilTest(unittest.TestCase):
             contig_ref = str(info[6]) + '/' + str(info[0]) + '/' + str(info[4])
             data['contigset_ref'] = contig_ref
 
-        # save to ws
-        save_info = {
-            'workspace': cls.wsName,
-            'objects': [{
-                'type': gtype,
-                'data': data,
-                'name': obj_name + '.genome'
-            }]
-        }
-        result = cls.wsClient.save_objects(save_info)
-        info = result[0]
+        if gtype:
+            save_info = {
+                'workspace': cls.wsName,
+                'objects': [{
+                    'type': gtype,
+                    'data': data,
+                    'name': obj_name + '.genome'
+                }]
+            }
+            result = cls.wsClient.save_objects(save_info)
+            info = result[0]
+        else:
+            info = cls.ga_client.save_one_genome_v1(
+                {
+                    'workspace': cls.wsName,
+                    'data': data,
+                    'name': obj_name + '.genome'
+                })['info']
         ref = str(info[6]) + '/' + str(info[0]) + '/' + str(info[4])
         print('created test genome: ' + ref + ' from file ' + filename)
         return ref
@@ -174,7 +183,6 @@ class GenomeSearchUtilTest(unittest.TestCase):
                                             )[0]
         self.assertTrue("num_found" in ret)
         self.assertEqual(ret["num_found"], 1)
-
 
     def test_custom_genome_ontologies(self):
         ret = self.getImpl().search(self.getContext(),
@@ -276,3 +284,24 @@ class GenomeSearchUtilTest(unittest.TestCase):
         self.assertEqual(ret['features'][0]['feature_array'], 'features')
         self.assertTrue("threonine biosynthetic process" in ret["features"][0]
             ["ontology_terms"]["GO:0009088"])
+
+    def test_structured_queries(self):
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.eco_ref,
+                                     "structured_query": {"feature_type": "gene"},
+                                     "limit": 1})[0]
+        self.assertEqual(ret["num_found"], 4498)
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.eco_ref,
+                                     "structured_query": {"$or": [{"feature_id": "b0001"},
+                                                                  {"feature_id": "b0002"}]},
+                                     "limit": 1})[0]
+        self.assertEqual(ret["num_found"], 2)
+
+        id_queries2 = ["b{0:04d}".format(x) for x in range(1, 1000)]
+        ret = self.getImpl().search(self.getContext(),
+                                    {"ref": self.eco_ref,
+                                     "structured_query": {"feature_id": id_queries2},
+                                     "limit": 1000})[0]
+        self.assertEqual(ret["num_found"], 963)
+

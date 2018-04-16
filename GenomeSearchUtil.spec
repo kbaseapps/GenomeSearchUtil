@@ -13,6 +13,8 @@ module GenomeSearchUtil {
     typedef tuple<string column, boolean ascending> column_sorting;
 
     /*
+        structured_query - Optional query in object form that uses MongoDB style key-value
+            matching and $and, $not, and $or keywords.
         num_found - optional field which when set informs that there
             is no need to perform full scan in order to count this
             value because it was already done before; please don't
@@ -22,6 +24,7 @@ module GenomeSearchUtil {
     typedef structure {
         string ref;
         string query;
+        UnspecifiedObject structured_query;
         list<column_sorting> sort_by;
         int start;
         int limit;

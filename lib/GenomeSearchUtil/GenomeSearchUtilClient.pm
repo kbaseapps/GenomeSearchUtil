@@ -124,6 +124,7 @@ $result is a GenomeSearchUtil.SearchResult
 SearchOptions is a reference to a hash where the following keys are defined:
 	ref has a value which is a string
 	query has a value which is a string
+	structured_query has a value which is an UnspecifiedObject, which can hold any non-null object
 	sort_by has a value which is a reference to a list where each element is a GenomeSearchUtil.column_sorting
 	start has a value which is an int
 	limit has a value which is an int
@@ -164,6 +165,7 @@ $result is a GenomeSearchUtil.SearchResult
 SearchOptions is a reference to a hash where the following keys are defined:
 	ref has a value which is a string
 	query has a value which is a string
+	structured_query has a value which is an UnspecifiedObject, which can hold any non-null object
 	sort_by has a value which is a reference to a list where each element is a GenomeSearchUtil.column_sorting
 	start has a value which is an int
 	limit has a value which is an int
@@ -675,6 +677,8 @@ a reference to a list containing 2 items:
 
 =item Description
 
+structured_query - Optional query in object form that uses MongoDB style key-value
+    matching and $and, $not, and $or keywords.
 num_found - optional field which when set informs that there
     is no need to perform full scan in order to count this
     value because it was already done before; please don't
@@ -690,6 +694,7 @@ num_found - optional field which when set informs that there
 a reference to a hash where the following keys are defined:
 ref has a value which is a string
 query has a value which is a string
+structured_query has a value which is an UnspecifiedObject, which can hold any non-null object
 sort_by has a value which is a reference to a list where each element is a GenomeSearchUtil.column_sorting
 start has a value which is an int
 limit has a value which is an int
@@ -704,6 +709,7 @@ num_found has a value which is an int
 a reference to a hash where the following keys are defined:
 ref has a value which is a string
 query has a value which is a string
+structured_query has a value which is an UnspecifiedObject, which can hold any non-null object
 sort_by has a value which is a reference to a list where each element is a GenomeSearchUtil.column_sorting
 start has a value which is an int
 limit has a value which is an int
@@ -765,9 +771,9 @@ aliases - mapping from alias name (key) to set of alias sources
 global_location - this is location-related properties that are
     under sorting whereas items in "location" array are not,
 feature_array - field recording which array a feature is located in
-    (features, mrnas, cdss, ect.)
-feature_idx - field keeping the position of feature in
-    it's array in a Genome object,
+    (features, mrnas, cdss, non_coding_features)
+feature_idx - field keeping the position of feature in its array in a
+    Genome object,
 ontology_terms - mapping from term ID (key) to term name (value).
 
 
