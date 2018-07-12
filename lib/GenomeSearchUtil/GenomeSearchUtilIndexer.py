@@ -6,7 +6,7 @@ import subprocess
 import traceback
 import string
 import tempfile
-from biokbase.workspace.client import Workspace as workspaceService
+from Workspace.WorkspaceClient import Workspace
 from GenomeSearchUtil.CombinedLineIterator import CombinedLineIterator
 from itertools import product
 
@@ -177,7 +177,7 @@ class GenomeSearchUtilIndexer:
                                                      inner_chsum + "_ftr.tsv.gz"))
 
     def check_feature_cache(self, ref, token):
-        ws_client = workspaceService(self.ws_url, token=token)
+        ws_client = Workspace(self.ws_url, token=token)
         info = ws_client.get_object_info_new({"objects": [{"ref": ref}]})[0]
         inner_chsum = info[8]
         index_file = os.path.join(self.genome_index_dir, inner_chsum + "_ftr.tsv.gz")
@@ -432,7 +432,7 @@ class GenomeSearchUtilIndexer:
         return ret
 
     def check_contig_cache(self, gref, token):
-        ws_client = workspaceService(self.ws_url, token=token)
+        ws_client = Workspace(self.ws_url, token=token)
         info = ws_client.get_object_info_new({"objects": [{"ref": gref}]})[0]
         inner_chsum = info[8]
         index_file = os.path.join(self.genome_index_dir, inner_chsum + "_ctg.tsv.gz")
