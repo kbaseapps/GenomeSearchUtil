@@ -19,16 +19,16 @@ class StructuredQueryTest(unittest.TestCase):
         }
 
     def test_invalid_input(self):
-        with self.assertRaisesRegexp(ValueError, "Unrecognised field"):
+        with self.assertRaisesRegex(ValueError, "Unrecognised field"):
             _eval_structured_query(self.sline1, {"foo": "bar"}, self.props_map)
 
-        with self.assertRaisesRegexp(ValueError, "should be a dictionary"):
+        with self.assertRaisesRegex(ValueError, "should be a dictionary"):
             _eval_structured_query(self.sline1, "meh", self.props_map)
 
-        with self.assertRaisesRegexp(ValueError, "should be a list"):
+        with self.assertRaisesRegex(ValueError, "should be a list"):
             _eval_structured_query(self.sline1, {'$and': "meh"}, self.props_map)
 
-        with self.assertRaisesRegexp(ValueError, "should be a list"):
+        with self.assertRaisesRegex(ValueError, "should be a list"):
             _eval_structured_query(self.sline1, {'$or': "meh"}, self.props_map)
 
     def test_field_query(self):
