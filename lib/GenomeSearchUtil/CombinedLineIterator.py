@@ -7,7 +7,7 @@ import io
 class CombinedLineIterator:
 
     def __init__(self, source):
-        if isinstance(source, basestring):
+        if isinstance(source, str):
             self.index_file = io.TextIOWrapper(io.BufferedReader(gzip.open(source)),
                                                encoding="utf-8")
             self.process = None
@@ -29,7 +29,7 @@ class CombinedLineIterator:
             return self.index_file.__iter__()
         return self
 
-    def next(self):
+    def __next__(self):
         if self.index_file:
             raise ValueError("Unsupported operation (call __iter__ first)")
         else:
