@@ -70,7 +70,6 @@ class GenomeSearchUtilIndexer:
         """Fetch a genome using WSLargeDataIO and return it as a python dict"""
 
         callback_url = os.environ.get('SDK_CALLBACK_URL')
-        callback_url = None
         if callback_url:
             print('fetching genome object using WsLargeDataIO')
             ws_client = WsLargeDataIO(callback_url)
