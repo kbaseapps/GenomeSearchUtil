@@ -9,6 +9,7 @@ from itertools import product
 
 from GenomeSearchUtil.CombinedLineIterator import CombinedLineIterator
 from Workspace.WorkspaceClient import Workspace
+from WsLargeDataIO.WsLargeDataIOClient import WsLargeDataIO
 
 
 def _eval_structured_query(split_line, structured_query, prop_dict):
@@ -64,7 +65,24 @@ class GenomeSearchUtilIndexer:
         self.debug = "debug" in config and config["debug"] == "1"
         self.max_sort_mem_size = 250000
         self.unicode_comma = "\uFF0C"
-    
+
+    def get_one_genome(self, params, token=None):
+        """Fetch a genome using WSLargeDataIO and return it as a python dict"""
+
+        callback_url = os.environ.get('SDK_CALLBACK_URL')
+        callback_url = None
+        if callback_url:
+            print('fetching genome object using WsLargeDataIO')
+            ws_client = WsLargeDataIO(callback_url)
+            res = ws_client.get_objects(params)['data'][0]
+            data = json.load(open(res['data_json_file']))
+        else:
+            print('fetching genome object using Workspace')
+            ws_client = Workspace(self.ws_url, token=token)
+            data = ws_client.get_objects2(params)["data"][0]["data"]
+
+        return data
+
     def search(self, token, ref, query, structured_query, sort_by, start, limit, num_found):
         if query is None:
             query = ""
@@ -190,9 +208,8 @@ class GenomeSearchUtilIndexer:
                  'non_coding_features/[*]/'],
                 ["id", "type", "function", "functions", "aliases", "location",
                  "ontology_terms"])] + ['ontologies_present']
-            genome = ws_client.get_objects2({"objects": [{"ref": ref,
-                                                          "included": incl}]
-                                             })["data"][0]["data"]
+            genome = self.get_one_genome({"objects": [{"ref": ref,
+                                                       "included": incl}]}, token)
             self.save_feature_tsv(genome, inner_chsum)
             if self.debug:
                 print(("    (time=" + str(time.time() - t1) + ")"))
@@ -438,8 +455,9 @@ class GenomeSearchUtilIndexer:
         index_file = os.path.join(self.genome_index_dir, inner_chsum + "_ctg.tsv.gz")
         if not os.path.isfile(index_file):
             t1 = time.time()
-            genome = ws_client.get_objects2({"objects": [{"ref": gref, "included":
-                    ["/contigset_ref", "/assembly_ref"]}]})["data"][0]["data"]
+
+            genome = self.get_one_genome({"objects": [{"ref": gref, "included":
+                                                      ["/contigset_ref", "/assembly_ref"]}]}, token)
             ctg_ref = None
             ctg_incl = None
             if "contigset_ref" in genome:
