@@ -72,8 +72,8 @@ class GenomeSearchUtilIndexer:
         callback_url = os.environ.get('SDK_CALLBACK_URL')
         if callback_url:
             print('fetching genome object using WsLargeDataIO')
-            ws_client = WsLargeDataIO(callback_url)
-            res = ws_client.get_objects(params)['data'][0]
+            ws_large_data = WsLargeDataIO(callback_url)
+            res = ws_large_data.get_objects(params)['data'][0]
             data = json.load(open(res['data_json_file']))
         else:
             print('fetching genome object using Workspace')
